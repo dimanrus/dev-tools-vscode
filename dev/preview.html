@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" data-host-lang="en" data-startup-tool="converters-json-yaml" data-icon-uri="../media/icon.png">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; media-src 'self' blob:;"
+    />
+    <title>Dev Tools — preview</title>
+    <link rel="stylesheet" href="../media/devtools.css" />
+    <style>
+      /* Minimal VS Code dark theme approximation for standalone preview. */
+      :root {
+        --vscode-editor-background: #1f1f1f;
+        --vscode-editor-foreground: #cccccc;
+        --vscode-sideBar-background: #181818;
+        --vscode-editorWidget-background: #252526;
+        --vscode-input-background: #313131;
+        --vscode-input-foreground: #cccccc;
+        --vscode-button-background: #0e639c;
+        --vscode-button-foreground: #ffffff;
+        --vscode-button-hoverBackground: #1177bb;
+        --vscode-focusBorder: #007fd4;
+        --vscode-list-hoverBackground: #2a2d2e;
+        --vscode-list-activeSelectionBackground: #04395e;
+        --vscode-list-activeSelectionForeground: #ffffff;
+        --vscode-descriptionForeground: #9d9d9d;
+        --vscode-panel-border: #2b2b2b;
+        --vscode-textCodeBlock-background: #2b2b2b;
+        --vscode-textLink-foreground: #3794ff;
+        --vscode-editorError-foreground: #f14c4c;
+        --vscode-editorWarning-foreground: #cca700;
+        --vscode-testing-iconPassed: #388a34;
+        --vscode-font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        --vscode-font-size: 13px;
+        --vscode-editor-font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+      }
+      body { background: #1f1f1f; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="../dist/webview.js?v=5"></script>
+  </body>
+</html>

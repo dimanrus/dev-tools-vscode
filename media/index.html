@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="{{hostLang}}" data-host-lang="{{hostLang}}" data-startup-tool="{{startupTool}}" data-icon-uri="{{iconUri}}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src {{cspSource}} data: blob:; style-src {{cspSource}} 'unsafe-inline'; script-src 'nonce-{{nonce}}'; font-src {{cspSource}}; media-src {{cspSource}} blob:;"
+    />
+    <title>{{title}}</title>
+    <link rel="stylesheet" href="{{styleUri}}" />
+  </head>
+  <body>
+    <div id="app">
+      <div class="dt-boot">
+        <img class="dt-boot-icon" src="{{iconUri}}" alt="" />
+        <div class="dt-boot-text">{{title}}</div>
+        <div class="dt-boot-bar"><span></span></div>
+      </div>
+    </div>
+    <script nonce="{{nonce}}" src="{{scriptUri}}"></script>
+  </body>
+</html>

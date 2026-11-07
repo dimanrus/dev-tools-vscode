@@ -3,6 +3,14 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# Dev Tools extension
+node_modules/
+dist/
+*.vsix
+.vscode-test/
+out/
+.DS_Store
+
 # User-specific files
 *.rsuser
 *.suo

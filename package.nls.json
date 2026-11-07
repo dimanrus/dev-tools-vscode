@@ -1,0 +1,15 @@
+{
+  "extension.description": "A developer toolbox in one place: converters, encoders, formatters, generators, testers, icons and more.",
+  "command.open.title": "Open Dev Tools",
+  "command.openTool.title": "Open Dev Tools: specific tool",
+  "command.category": "Dev Tools",
+  "configuration.title": "Dev Tools",
+  "config.language.description": "Interface language of the Dev Tools panel.",
+  "config.language.auto": "Follow the VS Code display language",
+  "config.language.en": "English",
+  "config.language.ru": "Russian",
+  "viewsContainer.title": "Dev Tools",
+  "view.launcher.name": "Tools",
+  "config.showStatusBar.description": "Show a Dev Tools button in the status bar that opens the panel directly.",
+  "config.startupTool.description": "Tool identifier opened by default, for example `converters-json-yaml`. Leave empty to restore the last used tool."
+}

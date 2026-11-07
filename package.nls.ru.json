@@ -1,0 +1,15 @@
+{
+  "extension.description": "Инструменты разработчика в одном месте: конвертеры, кодирование, форматирование, генераторы, тесты, иконки и многое другое.",
+  "command.open.title": "Открыть Dev Tools",
+  "command.openTool.title": "Открыть Dev Tools: конкретный инструмент",
+  "command.category": "Dev Tools",
+  "configuration.title": "Dev Tools",
+  "config.language.description": "Язык интерфейса панели Dev Tools.",
+  "config.language.auto": "Как в VS Code",
+  "config.language.en": "Английский",
+  "config.language.ru": "Русский",
+  "viewsContainer.title": "Dev Tools",
+  "view.launcher.name": "Инструменты",
+  "config.showStatusBar.description": "Показывать кнопку Dev Tools в строке состояния, которая открывает панель напрямую.",
+  "config.startupTool.description": "Идентификатор инструмента, открываемого по умолчанию, например `converters-json-yaml`. Оставьте пустым, чтобы восстанавливать последний использованный инструмент."
+}

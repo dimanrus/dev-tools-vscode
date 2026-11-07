@@ -1,0 +1,12 @@
+**
+!package.json
+!package.nls.json
+!package.nls.ru.json
+!README.md
+!README.ru.md
+!CHANGELOG.md
+!CHANGELOG.ru.md
+!LICENSE
+!l10n/**
+!media/**
+!dist/**
