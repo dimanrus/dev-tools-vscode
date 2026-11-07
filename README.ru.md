@@ -2,7 +2,7 @@
   <img src="media/icon.png" width="120" alt="Иконка Dev Tools" />
 </p>
 
-<h1 align="center">🧰 Dev Tools для VS Code</h1>
+<h1 align="center">🧰 Dev Tools Toolbox для VS Code</h1>
 
 <p align="center">
   <strong>Инструменты разработчика в одном месте — 45 инструментов в одной панели.</strong><br />

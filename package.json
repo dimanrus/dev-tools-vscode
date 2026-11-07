@@ -1,6 +1,6 @@
 {
   "name": "dev-tools-vscode",
-  "displayName": "Dev Tools",
+  "displayName": "Dev Tools Toolbox",
   "description": "%extension.description%",
   "version": "1.0.0",
   "publisher": "dimanrus",
