@@ -99,6 +99,26 @@ function jsonPathTool(): ReturnType<typeof defineTool> {
   });
 }
 
+const REGEX_EXAMPLES: Array<{ label: [string, string]; pattern: string; flags: string; sample: string }> = [
+  { label: ['Email address', 'Email-адрес'], pattern: '[\\w.+-]+@[\\w-]+\\.[\\w.-]+', flags: 'g', sample: 'Contact: dev@example.com, support@dev.tools.' },
+  { label: ['URL', 'URL'], pattern: 'https?://[^\\s]+', flags: 'g', sample: 'Docs https://example.com/docs and http://localhost:3000/api.' },
+  { label: ['IPv4 address', 'IPv4-адрес'], pattern: '\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b', flags: 'g', sample: 'Gateway 192.168.0.1, DNS 8.8.8.8.' },
+  { label: ['UUID', 'UUID'], pattern: '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', flags: 'gi', sample: 'id=3f2504e0-4f89-11d3-9a0c-0305e82c3301' },
+  { label: ['ISO date', 'Дата ISO'], pattern: '(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})', flags: 'g', sample: 'Created 2026-11-21, updated 2026-12-01.' },
+  { label: ['Time 24h', 'Время 24ч'], pattern: '\\b([01]?\\d|2[0-3]):([0-5]\\d)(?::([0-5]\\d))?\\b', flags: 'g', sample: 'Starts at 09:30 and ends at 18:45:10.' },
+  { label: ['HEX color', 'HEX-цвет'], pattern: '#(?:[0-9a-f]{3}){1,2}\\b', flags: 'gi', sample: 'Colors: #fff, #3b82f6, #0f172a.' },
+  { label: ['Phone (international)', 'Телефон (межд.)'], pattern: '\\+?\\d[\\d\\s().-]{7,}\\d', flags: 'g', sample: 'Call +1 (555) 123-4567 or +44 20 7946 0958.' },
+  { label: ['Russian phone', 'Российский телефон'], pattern: '(?:\\+7|8)[\\s-]?\\(?\\d{3}\\)?[\\s-]?\\d{3}[\\s-]?\\d{2}[\\s-]?\\d{2}', flags: 'g', sample: '+7 (999) 123-45-67 и 8 800 555 35 35.' },
+  { label: ['Hashtags', 'Хештеги'], pattern: '#(\\w+)', flags: 'g', sample: 'Post about #regex and #devtools.' },
+  { label: ['Quoted strings', 'Строки в кавычках'], pattern: '"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"', flags: 'g', sample: 'He said "hello \\"world\\"" today.' },
+  { label: ['HTML tag', 'HTML-тег'], pattern: '<(?<tag>[a-z][\\w-]*)\\b[^>]*>(.*?)</\\k<tag>>', flags: 'gis', sample: '<p class="lead">Hello</p><div>World</div>' },
+  { label: ['JSON key-value', 'JSON ключ-значение'], pattern: '"(?<key>[^"]+)"\\s*:\\s*("(?<value>[^"]*)"|(?<number>-?\\d+(?:\\.\\d+)?))', flags: 'g', sample: '{"name": "Dev Tools", "version": 1.1}' },
+  { label: ['Semver', 'Semver'], pattern: '\\b(\\d+)\\.(\\d+)\\.(\\d+)(?:-([0-9a-z.-]+))?\\b', flags: 'gi', sample: 'Uses 1.1.0 and 2.0.0-beta.1.' },
+  { label: ['Cyrillic words', 'Кириллические слова'], pattern: '\\b[А-Яа-яЁё]{3,}\\b', flags: 'g', sample: 'Dev Tools — удобные инструменты разработчика.' },
+  { label: ['Duplicate words', 'Повторяющиеся слова'], pattern: '\\b(\\w+)\\s+\\1\\b', flags: 'gi', sample: 'This is a a test with with duplicates.' },
+  { label: ['Number with separators', 'Число с разделителями'], pattern: '\\b\\d{1,3}(?:[ ,]\\d{3})+(?:\\.\\d+)?\\b', flags: 'g', sample: 'Revenue 1 234 567 and 12,345.67.' },
+];
+
 const CHEATSHEET: Array<[string, string, string]> = [
   ['\\d', 'digit', 'цифра'],
   ['\\w', 'word character', 'словесный символ'],
@@ -134,15 +154,45 @@ function regexTool(): ReturnType<typeof defineTool> {
       const replacement = textInput({ value: '<$&>', class: 'dt-mono' });
       const highlight = h('div', { class: 'dt-regex-highlight dt-mono' });
       const matchesHost = h('div');
+      const groupsHost = h('div');
       const replaceHost = h('div');
       const error = errorSlot();
       const flags = new Set(['g']);
+
+      const exampleSelect = select(
+        [
+          { value: 'custom', label: ctx.pick('Custom pattern', 'Свой шаблон') },
+          ...REGEX_EXAMPLES.map((example, index) => ({
+            value: String(index),
+            label: ctx.pick(example.label[0], example.label[1]),
+          })),
+        ],
+        'custom',
+        (value) => {
+          if (value === 'custom') return;
+          const example = REGEX_EXAMPLES[Number(value)];
+          if (!example) return;
+          pattern.value = example.pattern;
+          text.value = example.sample;
+          flags.clear();
+          for (const flag of example.flags) flags.add(flag);
+          for (const input of Array.from(flagBar.querySelectorAll<HTMLInputElement>('input'))) {
+            input.checked = flags.has(input.dataset.flag ?? '');
+          }
+          evaluate();
+        },
+      );
 
       const flagBar = h(
         'div',
         { class: 'dt-flags' },
         ...['g', 'i', 'm', 's', 'u'].map((flag) => {
-          const input = h('input', { type: 'checkbox', class: 'dt-check', checked: flags.has(flag) });
+          const input = h('input', {
+            type: 'checkbox',
+            class: 'dt-check',
+            checked: flags.has(flag),
+            dataset: { flag },
+          });
           input.addEventListener('change', () => {
             if (input.checked) flags.add(flag);
             else flags.delete(flag);
@@ -174,6 +224,7 @@ function regexTool(): ReturnType<typeof defineTool> {
           highlight.innerHTML = html;
 
           statsHost(matchesHost, all);
+          groupsHost.replaceChildren(...buildGroups(all));
           replaceHost.replaceChildren(
             h('code', { class: 'dt-mono dt-replace-preview' }, text.value.replace(global, replacement.value)),
           );
@@ -181,8 +232,34 @@ function regexTool(): ReturnType<typeof defineTool> {
           setError(error, cause instanceof Error ? cause.message : String(cause));
           highlight.textContent = text.value;
           matchesHost.replaceChildren();
+          groupsHost.replaceChildren();
           replaceHost.replaceChildren();
         }
+      };
+
+      const buildGroups = (matches: RegExpMatchArray[]): Node[] => {
+        const rows: Array<Array<string | Node>> = [];
+        matches.slice(0, 100).forEach((match, index) => {
+          if (match.groups) {
+            for (const [name, value] of Object.entries(match.groups)) {
+              rows.push([String(index + 1), name, value ?? '']);
+            }
+          } else {
+            for (let group = 1; group < match.length; group++) {
+              rows.push([String(index + 1), String(group), match[group] ?? '']);
+            }
+          }
+        });
+        if (!rows.length) {
+          return [note(ctx.pick('This pattern has no capture groups.', 'В этом шаблоне нет групп захвата.'), 'info')];
+        }
+        return [
+          stats([
+            [ctx.pick('Groups', 'Групп'), rows.length],
+            [ctx.pick('Matches', 'Совпадений'), matches.length],
+          ]),
+          table([ctx.pick('Match', 'Совпадение'), ctx.pick('Group', 'Группа'), ctx.pick('Value', 'Значение')], rows),
+        ];
       };
 
       const statsHost = (host: HTMLElement, matches: RegExpMatchArray[]) => {
@@ -209,11 +286,15 @@ function regexTool(): ReturnType<typeof defineTool> {
       pattern.addEventListener('input', evaluate);
       text.addEventListener('input', evaluate);
       replacement.addEventListener('input', evaluate);
+      pattern.addEventListener('input', () => {
+        exampleSelect.value = 'custom';
+      });
 
       root.append(
         h(
           'div',
           { class: 'dt-stack' },
+          field(ctx.pick('Example', 'Пример'), exampleSelect),
           h('div', { class: 'dt-regex-bar' }, h('span', { class: 'dt-regex-slash' }, '/'), pattern, h('span', { class: 'dt-regex-slash' }, '/'), flagBar),
           error,
           split(
@@ -222,6 +303,7 @@ function regexTool(): ReturnType<typeof defineTool> {
               'div',
               { class: 'dt-stack' },
               pane(ctx.pick('Matches', 'Совпадения'), matchesHost),
+              pane(ctx.pick('Groups', 'Группы'), groupsHost),
               pane(ctx.pick('Replace with', 'Заменить на'), h('div', { class: 'dt-stack' }, replacement, replaceHost)),
             ),
           ),
