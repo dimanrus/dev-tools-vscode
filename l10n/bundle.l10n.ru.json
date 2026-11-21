@@ -1,4 +1,10 @@
 {
   "Dev Tools": "Dev Tools",
-  "Open Dev Tools": "Открыть Dev Tools"
+  "Open Dev Tools": "Открыть Dev Tools",
+  "Open in Dev Tools": "Открыть в Dev Tools",
+  "Select a file to open in Dev Tools.": "Выберите файл, чтобы открыть его в Dev Tools.",
+  "No Dev Tools editor supports this file type.": "Ни один редактор Dev Tools не поддерживает этот тип файлов.",
+  "Choose an editor": "Выберите редактор",
+  "File is too large to open in the webview (limit 96 MB).": "Файл слишком большой для webview (лимит 96 МБ).",
+  "Cannot read the file: {0}": "Не удалось прочитать файл: {0}"
 }

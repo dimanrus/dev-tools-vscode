@@ -11,7 +11,7 @@ import {
   fileDrop,
   note,
   pane,
-  rangeField,
+  knobField as rangeField,
   readDataUrl,
   select,
   setError,

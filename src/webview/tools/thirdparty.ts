@@ -13,7 +13,7 @@ import {
   fileDrop,
   note,
   pane,
-  rangeField,
+  knobField as rangeField,
   readText,
   resultPane,
   select,

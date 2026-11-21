@@ -1,5 +1,5 @@
 /** Reusable UI building blocks shared by all tools. */
-import { h, svgIcon, type Child } from './dom.ts';
+import { clamp, h, svgIcon, type Child } from './dom.ts';
 import { t } from './i18n.ts';
 
 export interface ButtonOptions {
@@ -116,6 +116,8 @@ export interface SelectOption {
   label: string;
   /** Tooltip, also used as the accessible name when the label is abbreviated. */
   title?: string;
+  /** Icon paths; when set the option renders as an icon-only segment. */
+  icon?: string;
 }
 
 export function select(options: SelectOption[], value: string, onchange?: (value: string) => void, className = ''): HTMLSelectElement {
@@ -150,9 +152,17 @@ export function segmented(options: SelectOption[], value: string, onchange: (val
   for (const option of options) {
     const button = h(
       'button',
-      { class: 'dt-segment', type: 'button', role: 'radio', title: option.title ?? option.label, dataset: { value: option.value } },
-      option.label,
+      {
+        class: `dt-segment ${option.icon ? 'dt-segment-icon' : ''}`,
+        type: 'button',
+        role: 'radio',
+        title: option.title ?? option.label,
+        dataset: { value: option.value },
+      },
+      option.icon ? svgIcon(option.icon, 15) : null,
+      option.label ? h('span', { class: option.icon ? 'dt-hidden' : '' }, option.label) : null,
     );
+    if (option.icon) button.setAttribute('aria-label', option.label);
     button.addEventListener('click', () => {
       mark(option.value);
       onchange(option.value);
@@ -180,18 +190,293 @@ export function rangeField(label: string, min: number, max: number, value: numbe
   return h('div', { class: 'dt-field' }, h('span', { class: 'dt-label' }, label), h('div', { class: 'dt-range-row' }, input, output));
 }
 
-export function pane(title: string, body: Child, actions: Child[] = [], className = ''): HTMLElement {
-  return h(
+export interface PaneOptions {
+  /** Start collapsed when true. */
+  defaultCollapsed?: boolean;
+  /** When false the pane cannot be collapsed and has no chevron. */
+  collapsible?: boolean;
+}
+
+export function pane(
+  title: string,
+  body: Child,
+  actions: Child[] = [],
+  className = '',
+  options: PaneOptions = {},
+): HTMLElement {
+  const collapsible = options.collapsible ?? true;
+  let collapsed = collapsible && (options.defaultCollapsed ?? false);
+  const chevron = h('span', { class: 'dt-pane-chevron' }, svgIcon('<path d="M6 9l6 6l6 -6"/>', 14));
+  const titleNode = collapsible
+    ? h(
+        'button',
+        { class: 'dt-pane-title-btn', type: 'button' },
+        chevron,
+        h('span', { class: 'dt-pane-title' }, title),
+      )
+    : h('div', { class: 'dt-pane-title-static' }, h('span', { class: 'dt-pane-title' }, title));
+  const element = h(
     'div',
-    { class: `dt-pane ${className}` },
+    { class: `dt-pane ${className} ${collapsed ? 'is-collapsed' : ''}` },
     h(
       'div',
       { class: 'dt-pane-head' },
-      h('span', { class: 'dt-pane-title' }, title),
+      titleNode,
       actions.length ? h('div', { class: 'dt-pane-actions' }, ...actions) : null,
     ),
-    h('div', { class: 'dt-pane-body' }, body),
+    h('div', { class: 'dt-pane-collapse' }, h('div', { class: 'dt-pane-body' }, body)),
   );
+  if (!collapsible) return element;
+  titleNode.setAttribute('aria-expanded', String(!collapsed));
+  titleNode.addEventListener('click', () => {
+    collapsed = !collapsed;
+    element.classList.toggle('is-collapsed', collapsed);
+    titleNode.setAttribute('aria-expanded', String(!collapsed));
+    titleNode.title = collapsed ? t('action.expand') : t('action.collapse');
+  });
+  titleNode.title = collapsed ? t('action.expand') : t('action.collapse');
+  return element;
+}
+
+export interface KnobOptions {
+  label: string;
+  /** Inner SVG markup for the icon shown inside the knob. */
+  icon: string;
+  min: number;
+  max: number;
+  value: number;
+  step?: number;
+  defaultValue?: number;
+  format?: (value: number) => string;
+  oninput: (value: number) => void;
+}
+
+/** Circular slider with an icon, value readout and animated arc. */
+export function knob(options: KnobOptions): HTMLElement {
+  const { min, max } = options;
+  const step = options.step ?? 1;
+  const radius = 26;
+  const circumference = 2 * Math.PI * radius;
+  const arcLength = circumference * 0.75;
+  let value = Math.min(max, Math.max(min, options.value));
+
+  const wrap = h('div', { class: 'dt-knob', tabindex: 0, role: 'slider' });
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 64 64');
+  svg.setAttribute('class', 'dt-knob-svg');
+  const track = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  track.setAttribute('class', 'dt-knob-track');
+  track.setAttribute('cx', '32');
+  track.setAttribute('cy', '32');
+  track.setAttribute('r', String(radius));
+  track.setAttribute('transform', 'rotate(135 32 32)');
+  track.style.strokeDasharray = `${arcLength} ${circumference}`;
+  const progress = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  progress.setAttribute('class', 'dt-knob-arc');
+  progress.setAttribute('cx', '32');
+  progress.setAttribute('cy', '32');
+  progress.setAttribute('r', String(radius));
+  progress.setAttribute('transform', 'rotate(135 32 32)');
+  progress.style.strokeDasharray = `${arcLength} ${circumference}`;
+  svg.append(track, progress);
+
+  const iconWrap = h('span', { class: 'dt-knob-icon' }, svgIcon(options.icon, 16));
+  const valueLabel = h('span', { class: 'dt-knob-value' });
+  const label = h('span', { class: 'dt-knob-label' }, options.label);
+  wrap.append(svg, iconWrap, valueLabel, label);
+
+  const render = (): void => {
+    const fraction = (value - min) / Math.max(1, max - min);
+    progress.style.strokeDashoffset = String(arcLength * (1 - fraction));
+    valueLabel.textContent = options.format ? options.format(value) : String(Math.round(value));
+    wrap.setAttribute('aria-valuemin', String(min));
+    wrap.setAttribute('aria-valuemax', String(max));
+    wrap.setAttribute('aria-valuenow', String(Math.round(value)));
+    wrap.classList.toggle('is-touched', Math.abs(value) > 0.0001);
+  };
+
+  const setValue = (next: number): void => {
+    const stepped = Math.round(next / step) * step;
+    const clamped = Math.min(max, Math.max(min, stepped));
+    if (clamped === value) return;
+    value = clamped;
+    render();
+    options.oninput(value);
+  };
+
+  let dragging = false;
+  let startY = 0;
+  let startValue = value;
+  wrap.addEventListener('pointerdown', (event) => {
+    dragging = true;
+    startY = event.clientY;
+    startValue = value;
+    wrap.classList.add('is-active');
+    wrap.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+  wrap.addEventListener('pointermove', (event) => {
+    if (!dragging) return;
+    setValue(startValue - (event.clientY - startY) * ((max - min) / 180));
+  });
+  const stop = (event: PointerEvent): void => {
+    dragging = false;
+    wrap.classList.remove('is-active');
+    if (wrap.hasPointerCapture(event.pointerId)) wrap.releasePointerCapture(event.pointerId);
+  };
+  wrap.addEventListener('pointerup', stop);
+  wrap.addEventListener('pointercancel', stop);
+  wrap.addEventListener('dblclick', () => {
+    const reset = options.defaultValue ?? (min <= 0 && max >= 0 ? 0 : min);
+    setValue(reset);
+  });
+  wrap.addEventListener(
+    'wheel',
+    (event) => {
+      event.preventDefault();
+      setValue(value - Math.sign(event.deltaY) * step * 2);
+    },
+    { passive: false },
+  );
+  wrap.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowUp' || event.key === 'ArrowRight') {
+      event.preventDefault();
+      setValue(value + step);
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowLeft') {
+      event.preventDefault();
+      setValue(value - step);
+    }
+  });
+
+  render();
+  return wrap;
+}
+
+const knobIconMap: Array<[RegExp, string]> = [
+  [/(opacity|прозрач|alpha)/i, '<path d="M12 3a9 9 0 1 0 0 18z"/><path d="M12 3a9 9 0 0 1 0 18"/>'],
+  [/(rotation|поворот|rotate|angle|угол)/i, '<path d="M4 12a8 8 0 1 1 2.3 5.7"/><path d="M4 18v-6h6"/>'],
+  [/(scale|масштаб|размер|size|font|шрифт)/i, '<path d="M4 20l6 -6"/><path d="M4 14v6h6"/><path d="M14 4h6v6"/><path d="M20 4l-6 6"/>'],
+  [/(position x|позиция x|^x[ ,]|\bx\b)/i, '<path d="M3 12h18"/><path d="M7 8l-4 4l4 4"/><path d="M17 8l4 4l-4 4"/>'],
+  [/(position y|позиция y|^y[ ,]|\by\b)/i, '<path d="M12 3v18"/><path d="M8 7l4 -4l4 4"/><path d="M8 17l4 4l4 -4"/>'],
+  [/(depth|глубина|^z[ ,]|\bz\b)/i, '<path d="M4 8l8 -4l8 4v8l-8 4l-8 -4z"/><path d="M4 8l8 4l8 -4"/>'],
+  [/(light|свет|exposure|экспозиц|bright|ярк)/i, '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'],
+  [/(metal|металл)/i, '<path d="M12 3l7 9l-7 9l-7 -9z"/><path d="M12 3v18"/>'],
+  [/(rough|шерох|noise|зерн)/i, '<path d="M3 8c3 -3 6 3 9 0s6 3 9 0"/><path d="M3 16c3 -3 6 3 9 0s6 3 9 0"/>'],
+  [/(width|толщин|stroke|линия|line)/i, '<path d="M4 20l16 -16"/><path d="M4 15v5h5"/>'],
+  [/(quality|качество|corner|скругл|radius|радиус)/i, '<path d="M12 3l2 6l6 2l-6 2l-2 6l-2 -6l-6 -2l6 -2z"/>'],
+  [/(gain|volume|громкост|усилен)/i, '<path d="M4 10v4h4l5 4v-12l-5 4z"/><path d="M16 9a4 4 0 0 1 0 6"/>'],
+  [/(fade|затухан|плавн)/i, '<path d="M3 17c4 0 6 -10 9 -10s5 10 9 10"/>'],
+  [/(cutoff|срез|resonance|резонанс|filter|фильтр)/i, '<path d="M4 5h16l-6 7v6l-4 2v-8z"/>'],
+  [/(paragraph|абзац|sentence|предлож|word|слов|length|длина|count|количеств)/i, '<path d="M5 6h14M5 12h10M5 18h7"/>'],
+];
+
+function iconForLabel(label: string): string {
+  for (const [pattern, icon] of knobIconMap) if (pattern.test(label)) return icon;
+  return '<path d="M4 12h9"/><circle cx="17" cy="12" r="3"/>';
+}
+
+export interface KnobFieldOptions {
+  icon?: string;
+  step?: number;
+  defaultValue?: number;
+  format?: (value: number) => string;
+}
+
+/** A circular knob with an auto-picked icon, suitable for inspector grids. */
+export function knobField(
+  label: string,
+  min: number,
+  max: number,
+  value: number,
+  oninput: (value: number) => void,
+  stepOrOptions: number | KnobFieldOptions = 1,
+  maybeOptions: KnobFieldOptions = {},
+): HTMLElement {
+  const options = typeof stepOrOptions === 'number' ? maybeOptions : stepOrOptions;
+  const step = typeof stepOrOptions === 'number' ? stepOrOptions : (options.step ?? 1);
+  return knob({
+    label,
+    icon: options.icon ?? iconForLabel(label),
+    min,
+    max,
+    value,
+    step,
+    defaultValue: options.defaultValue,
+    format: options.format,
+    oninput,
+  });
+}
+
+export function knobGrid(...items: HTMLElement[]): HTMLElement {
+  return h('div', { class: 'dt-knob-grid' }, ...items);
+}
+
+export interface ResizableSplitOptions {
+  /** Left column share of the width (0..1). */
+  ratio?: number;
+  /** Smallest share the left column may take. */
+  minRatio?: number;
+  /** Largest share the left column may take. */
+  maxRatio?: number;
+  /** Width reserved for the right column in pixels. */
+  minSide?: number;
+  className?: string;
+  title?: string;
+  /** Called after every layout change (use it to resize canvases/renderers). */
+  onResize?: () => void;
+}
+
+/**
+ * Two columns with a drag handle between them. The divider is invisible until
+ * hovered; the left column keeps a percentage share stored in `--dt-split-ratio`.
+ */
+export function resizableSplit(left: Child, right: Child, options: ResizableSplitOptions = {}): HTMLElement {
+  const minRatio = options.minRatio ?? 0.3;
+  const maxRatio = options.maxRatio ?? 0.85;
+  const minSide = options.minSide ?? 300;
+  let ratio = clamp(options.ratio ?? 0.72, minRatio, maxRatio);
+  const handle = h('div', { class: 'dt-split-handle', role: 'separator', title: options.title ?? '' });
+  const element = h(
+    'div',
+    { class: `dt-split dt-split-resizable ${options.className ?? ''}` },
+    h('div', { class: 'dt-col' }, left),
+    handle,
+    h('div', { class: 'dt-col' }, right),
+  );
+  const apply = (next: number): void => {
+    const width = element.clientWidth;
+    // Before the first layout the width is 0, so keep the requested ratio.
+    const limit = width > 40 ? Math.max(minRatio, Math.min(maxRatio, 1 - (minSide + 10) / width)) : maxRatio;
+    ratio = clamp(next, minRatio, limit);
+    element.style.setProperty('--dt-split-ratio', `${(ratio * 100).toFixed(2)}%`);
+    element.style.setProperty('--dt-split-min-side', `${minSide}px`);
+    options.onResize?.();
+  };
+  apply(ratio);
+  handle.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    const bounds = element.getBoundingClientRect();
+    handle.setPointerCapture(event.pointerId);
+    handle.classList.add('is-active');
+    const move = (moveEvent: PointerEvent): void => {
+      if (!bounds.width) return;
+      apply((moveEvent.clientX - bounds.left) / bounds.width);
+    };
+    const stop = (): void => {
+      handle.classList.remove('is-active');
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', stop);
+      handle.removeEventListener('pointercancel', stop);
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', stop);
+    handle.addEventListener('pointercancel', stop);
+  });
+  window.addEventListener('resize', () => {
+    if (!element.isConnected) return;
+    apply(ratio);
+  });
+  return element;
 }
 
 export function split(left: Child, right: Child, className = ''): HTMLElement {

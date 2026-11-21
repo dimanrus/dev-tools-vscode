@@ -21,7 +21,11 @@ window.addEventListener('message', (event: MessageEvent) => {
 
 export function rpc<T = unknown>(method: string, params?: unknown): Promise<T> {
   if (!isInVsCode) {
-    return Promise.reject(new Error('This tool requires the VS Code extension host.'));
+    return Promise.reject(
+      new Error(
+        'This part runs in the VS Code extension host (Node.js). It is unavailable in the standalone browser preview (dev/preview.html) — open the panel inside VS Code.',
+      ),
+    );
   }
   const id = ++sequence;
   return new Promise<T>((resolve, reject) => {
