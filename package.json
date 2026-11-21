@@ -31,7 +31,39 @@
     "qr code",
     "color",
     "icons",
-    "lorem ipsum"
+    "lorem ipsum",
+    "image editor",
+    "layers",
+    "brush",
+    "crop",
+    "svg",
+    "vector",
+    "shapes",
+    "lasso",
+    "video",
+    "audio",
+    "mp3",
+    "3d",
+    "render",
+    "lightroom",
+    "cad",
+    "sketchup",
+    "snap",
+    "line",
+    "metadata",
+    "exif",
+    "id3",
+    "pdf",
+    "fake data",
+    "animation",
+    "keyframe",
+    "lottie",
+    "cryptography",
+    "aes",
+    "gost",
+    "kuznyechik",
+    "kdf",
+    "encryption"
   ],
   "icon": "media/icon.png",
   "galleryBanner": {
@@ -61,6 +93,16 @@
         "command": "devTools.openTool",
         "title": "%command.openTool.title%",
         "category": "%command.category%"
+      },
+      {
+        "command": "devTools.openWith",
+        "title": "%command.openWith.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "devTools.licenses",
+        "title": "%command.licenses.title%",
+        "category": "%command.category%"
       }
     ],
     "keybindings": [
@@ -75,6 +117,13 @@
         {
           "command": "devTools.openTool",
           "when": "false"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "devTools.openWith",
+          "when": "!explorerResourceIsFolder && resourceExtname =~ /\\.(png|jpe?g|webp|gif|bmp|svg|mp3|wav|ogg|m4a|aac|flac|mp4|mov|webm|mkv|obj|stl|glb|gltf|pdf)$/i",
+          "group": "navigation@9"
         }
       ],
       "view/title": [
@@ -138,26 +187,36 @@
     "build": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON build.mts --production",
     "watch": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON build.mts --watch",
     "catalog": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-catalog.mts",
+    "licenses": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-licenses.mts",
     "preview": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/preview.mts",
     "typecheck": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-catalog.mts && tsc --noEmit",
-    "vsix": "npm run build && vsce package --no-dependencies --allow-missing-repository -o dev-tools-vscode-1.0.0.vsix",
+    "vsix": "npm run build && vsce package --no-dependencies --allow-missing-repository -o dev-tools-vscode-1.1.0.vsix",
     "package": "npm run vsix",
     "vscode:prepublish": "npm run build"
   },
   "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
+    "@li0ard/gost": "^0.3.3",
+    "@noble/ciphers": "^2.4.0",
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "bcryptjs": "^3.0.3",
     "diff": "^9.0.0",
     "js-yaml": "^5.5.0",
     "jsonpath-plus": "^11.3.0",
-    "marked": "^18.1.3",
+    "marked": "^18.2.1",
+    "pdf-lib": "^1.17.1",
     "qrcode-generator": "^2.0.4",
-    "semver": "^7.8.6"
+    "semver": "^7.8.6",
+    "sm-crypto": "^0.5.9",
+    "three": "^0.187.0"
   },
   "devDependencies": {
-    "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.0.0",
     "@types/semver": "^7.7.0",
+    "@types/three": "^0.187.0",
     "@types/vscode": "1.105.0",
-    "@vscode/vsce": "^4.1.0",
+    "@vscode/vsce": "^4.1.1",
     "esbuild": "^0.28.2",
     "sharp": "^0.35.5",
     "typescript": "^7.0.2"
