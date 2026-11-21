@@ -5,18 +5,28 @@ export type GroupId =
   | 'converters'
   | 'text'
   | 'encoders'
+  | 'crypto'
   | 'formatters'
   | 'generators'
   | 'graphic'
+  | 'media'
   | 'testers'
   | 'icons'
   | 'thirdparty';
+
+export interface IncomingFile {
+  name: string;
+  mime: string;
+  dataUrl: string;
+}
 
 export interface ToolContext {
   t: (key: string, vars?: Record<string, string | number>) => string;
   pick: (en: string, ru: string) => string;
   rpc: <T = unknown>(method: string, params?: unknown) => Promise<T>;
   lang: () => Lang;
+  /** File passed from the VS Code explorer context menu, consumed once. */
+  takeIncoming: () => IncomingFile | null;
 }
 
 export interface ToolDef {

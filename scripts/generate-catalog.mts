@@ -30,9 +30,11 @@ export type CatalogGroup =
   | 'converters'
   | 'text'
   | 'encoders'
+  | 'crypto'
   | 'formatters'
   | 'generators'
   | 'graphic'
+  | 'media'
   | 'testers'
   | 'icons'
   | 'thirdparty';

@@ -6,9 +6,11 @@ export type CatalogGroup =
   | 'converters'
   | 'text'
   | 'encoders'
+  | 'crypto'
   | 'formatters'
   | 'generators'
   | 'graphic'
+  | 'media'
   | 'testers'
   | 'icons'
   | 'thirdparty';
@@ -283,6 +285,97 @@ export const CATALOG: CatalogEntry[] = [
     }
   },
   {
+    "id": "crypto-symmetric",
+    "group": "crypto",
+    "keywords": "aes aes-128 aes-192 aes-256 gcm cbc ctr cfb ofb ccm ocb siv xts chacha20 poly1305 camellia aria sm4 encrypt decrypt",
+    "name": {
+      "en": "Symmetric Encryption",
+      "ru": "Симметричное шифрование"
+    },
+    "desc": {
+      "en": "Encrypt and decrypt with AES-128/192/256 (ECB, CBC, CTR, CFB, OFB, GCM, CCM, OCB, SIV, GCM-SIV, KW, XTS), ChaCha20, Camellia, ARIA and SM4.",
+      "ru": "Шифрование и расшифровка: AES-128/192/256 (ECB, CBC, CTR, CFB, OFB, GCM, CCM, OCB, SIV, GCM-SIV, KW, XTS), ChaCha20, Camellia, ARIA и SM4."
+    }
+  },
+  {
+    "id": "crypto-gost-cipher",
+    "group": "crypto",
+    "keywords": "гост gost kuznyechik кузнечик magma магма 28147 34.12 mgm acpkm имитовставка",
+    "name": {
+      "en": "GOST Encryption",
+      "ru": "ГОСТ: шифрование"
+    },
+    "desc": {
+      "en": "Kuznyechik, Magma and GOST 28147-89 in ECB, CBC, CFB, CTR, CTR-ACPKM, OFB, MAC, OMAC-ACPKM, MGM and key wrap modes.",
+      "ru": "Кузнечик, Магма и ГОСТ 28147-89 в режимах ECB, CBC, CFB, CTR, CTR-ACPKM, OFB, MAC, OMAC-ACPKM, MGM и обёртки ключа."
+    }
+  },
+  {
+    "id": "crypto-gost-hash",
+    "group": "crypto",
+    "keywords": "стрибог streebog 34.11 34.10 эцп подпись hmac pbkdf2 vko",
+    "name": {
+      "en": "GOST Hashes & Signatures",
+      "ru": "ГОСТ: хеши и ЭЦП"
+    },
+    "desc": {
+      "en": "Streebog-256/512, GOST R 34.11-94, HMAC, PBKDF2, KDF and GOST R 34.10-2012 signatures with VKO key agreement.",
+      "ru": "Стрибог-256/512, ГОСТ Р 34.11-94, HMAC, PBKDF2, KDF и подписи ГОСТ Р 34.10-2012 с выработкой ключа VKO."
+    }
+  },
+  {
+    "id": "crypto-asymmetric",
+    "group": "crypto",
+    "keywords": "rsa oaep pkcs1 ecies ecdh sm2 国密 асимметричное шифрование",
+    "name": {
+      "en": "Asymmetric Encryption",
+      "ru": "Асимметричное шифрование"
+    },
+    "desc": {
+      "en": "Encrypt with RSA (OAEP, PKCS#1 v1.5), ECIES (ECDH + HKDF + AES-GCM) and SM2, with PEM key import and export.",
+      "ru": "Шифрование RSA (OAEP, PKCS#1 v1.5), ECIES (ECDH + HKDF + AES-GCM) и SM2 с импортом и экспортом PEM-ключей."
+    }
+  },
+  {
+    "id": "crypto-signatures",
+    "group": "crypto",
+    "keywords": "signature подпись ecdsa ed25519 secp256k1 rsa-pss x25519 ecdh pem jwk",
+    "name": {
+      "en": "Signatures & Key Exchange",
+      "ru": "Подписи и обмен ключами"
+    },
+    "desc": {
+      "en": "ECDSA, Ed25519, secp256k1, RSA-PSS and PKCS#1 signatures, X25519/P-256 key agreement, PEM/JWK conversion.",
+      "ru": "Подписи ECDSA, Ed25519, secp256k1, RSA-PSS и PKCS#1, обмен ключами X25519/P-256, конвертация PEM/JWK."
+    }
+  },
+  {
+    "id": "crypto-kdf",
+    "group": "crypto",
+    "keywords": "kdf pbkdf2 hkdf scrypt argon2 argon2id bcrypt password hash salt",
+    "name": {
+      "en": "Key Derivation (KDF)",
+      "ru": "Выработка ключа (KDF)"
+    },
+    "desc": {
+      "en": "Derive keys with PBKDF2, HKDF, scrypt and Argon2id; hash and verify passwords with bcrypt.",
+      "ru": "Выработка ключей PBKDF2, HKDF, scrypt и Argon2id; хеширование и проверка паролей bcrypt."
+    }
+  },
+  {
+    "id": "crypto-classic",
+    "group": "crypto",
+    "keywords": "caesar цезарь rot13 rot47 atbash атбаш vigenere виженер rail fence playfair xor otp вернам",
+    "name": {
+      "en": "Classic Ciphers",
+      "ru": "Классические шифры"
+    },
+    "desc": {
+      "en": "Caesar, ROT13/47, Atbash, Vigenère, rail fence, Playfair, XOR and one-time pad for puzzles and CTFs.",
+      "ru": "Цезарь, ROT13/47, Атбаш, Виженер, изгородь, Плейфейр, XOR и одноразовый блокнот для задач и CTF."
+    }
+  },
+  {
     "id": "formatters-json",
     "group": "formatters",
     "keywords": "json format beautify minify validate sort",
@@ -413,6 +506,32 @@ export const CATALOG: CatalogEntry[] = [
     }
   },
   {
+    "id": "generators-fake-data",
+    "group": "generators",
+    "keywords": "fake data test data names фio email phone address csv json mock seed generator",
+    "name": {
+      "en": "Fake Data Generator",
+      "ru": "Генератор данных"
+    },
+    "desc": {
+      "en": "Generate realistic names, phones, addresses, emails and companies, then export CSV or JSON.",
+      "ru": "Генерация реалистичных ФИО, телефонов, адресов, email и компаний с экспортом в CSV или JSON."
+    }
+  },
+  {
+    "id": "converters-pdf-toolkit",
+    "group": "converters",
+    "keywords": "pdf merge split delete pages rotate extract combine documents",
+    "name": {
+      "en": "PDF Toolkit",
+      "ru": "PDF-инструменты"
+    },
+    "desc": {
+      "en": "Merge PDFs, delete, rotate, reorder and extract pages, split into parts and save the result.",
+      "ru": "Объединение PDF, удаление, поворот, перестановка и извлечение страниц, разделение на части и сохранение."
+    }
+  },
+  {
     "id": "graphic-color-tools",
     "group": "graphic",
     "keywords": "color hex rgb hsl cmyk contrast wcag palette",
@@ -449,6 +568,136 @@ export const CATALOG: CatalogEntry[] = [
     "desc": {
       "en": "Convert images between PNG, JPEG and WebP with resizing and quality control.",
       "ru": "Конвертация изображений между PNG, JPEG и WebP с изменением размера и качеством."
+    }
+  },
+  {
+    "id": "graphic-image-adjust",
+    "group": "graphic",
+    "keywords": "photo image adjust lightroom brightness contrast saturation exposure temperature vignette grain sharpen presets",
+    "name": {
+      "en": "Image Adjustments",
+      "ru": "Коррекция изображений"
+    },
+    "desc": {
+      "en": "Lightroom-style tone and color corrections: exposure, contrast, highlights, colors, vignette and grain.",
+      "ru": "Коррекция как в Lightroom: экспозиция, контраст, света и тени, цвет, виньетка и зерно."
+    }
+  },
+  {
+    "id": "graphic-image-editor",
+    "group": "graphic",
+    "keywords": "image editor layers brush paint shapes rectangle ellipse line arrow lasso text overlay crop cut annotate canvas png jpeg webp",
+    "name": {
+      "en": "Image Editor",
+      "ru": "Редактор изображений"
+    },
+    "desc": {
+      "en": "Paint on layers, draw shapes and lines, add text and image overlays, lasso selection, crop and export.",
+      "ru": "Рисование по слоям, фигуры и линии, текст и наложение изображений, лассо, обрезка и экспорт."
+    }
+  },
+  {
+    "id": "graphic-vector-editor",
+    "group": "graphic",
+    "keywords": "svg vector shapes rect ellipse line arrow path polygon pencil draw edit markup export",
+    "name": {
+      "en": "Vector Editor",
+      "ru": "Векторный редактор"
+    },
+    "desc": {
+      "en": "Draw shapes, freehand lines and arrows, edit SVG markup, import and export vector graphics.",
+      "ru": "Рисование фигур, линий и стрелок, редактирование SVG-кода, импорт и экспорт векторной графики."
+    }
+  },
+  {
+    "id": "media-audio-editor",
+    "group": "media",
+    "keywords": "audio sound mp3 wav multitrack tracks mix equalizer eq filter trim fade normalize volume music",
+    "name": {
+      "en": "Audio Editor",
+      "ru": "Редактор звука"
+    },
+    "desc": {
+      "en": "Multi-track audio editing with waveform lanes, shared selection, 10-band equalizer, filters and WAV/MP3 mixdown.",
+      "ru": "Многодорожечный редактор звука: волновые дорожки, общее выделение, 10-полосный эквалайзер, фильтры и экспорт микса в WAV/MP3."
+    }
+  },
+  {
+    "id": "media-video-editor",
+    "group": "media",
+    "keywords": "video mp4 mov webm gif trim timeline tracks overlays text image music audio mix zoom export",
+    "name": {
+      "en": "Video Editor",
+      "ru": "Видеоредактор"
+    },
+    "desc": {
+      "en": "Multi-track video editing: V/A lanes, trim, overlays, audio mixing, zoomable full-width timeline and WebM export.",
+      "ru": "Многодорожечный видеоредактор: видео- и аудиодорожки, обрезка, наложения, микс звука, масштабируемый таймлайн на всю ширину и экспорт WebM."
+    }
+  },
+  {
+    "id": "media-scene-editor",
+    "group": "media",
+    "keywords": "3d scene three.js render model obj stl gltf import box sphere material light camera png transform gizmo",
+    "name": {
+      "en": "3D Scene",
+      "ru": "3D-сцена"
+    },
+    "desc": {
+      "en": "Build a 3D scene from primitives or imported models, move/rotate/scale them visually and render a PNG.",
+      "ru": "Соберите 3D-сцену из примитивов или импортированных моделей, двигайте/вращайте/масштабируйте их и рендерите в PNG."
+    }
+  },
+  {
+    "id": "media-cad-editor",
+    "group": "media",
+    "keywords": "cad sketchup push pull face measure snap vertex line dimension layers scenes components obj stl glb fbx dae 3ds texture",
+    "name": {
+      "en": "CAD Editor",
+      "ru": "CAD-редактор"
+    },
+    "desc": {
+      "en": "Sketch footprints, push/pull any face, snap lines and measurements to vertices/faces, use layers/scenes and exchange OBJ/STL/GLB/FBX.",
+      "ru": "Черчение контуров, выдавливание любой грани, линии и замеры с привязкой к вершинам/граням, слои/сцены и обмен OBJ/STL/GLB/FBX."
+    }
+  },
+  {
+    "id": "media-animation",
+    "group": "media",
+    "keywords": "animation keyframe timeline 2d 3d gizmo lottie after effects gif webm svg project",
+    "name": {
+      "en": "Animation Studio",
+      "ru": "Анимация"
+    },
+    "desc": {
+      "en": "Keyframe animation for 2D scenes and 3D objects with a transform gizmo, a timeline that labels every object and draws diamond keys, resolution presets, resizable stage, object groups, project files, Lottie, GIF and WebM export.",
+      "ru": "Покадровая анимация 2D-сцен и 3D-объектов с гизмо, таймлайном с подписями объектов и ромбами-ключами, пресетами разрешения, изменяемой шириной сцены, группами объектов, сохранением проекта, экспортом Lottie, GIF и WebM."
+    }
+  },
+  {
+    "id": "media-shader",
+    "group": "media",
+    "keywords": "shader glsl hlsl webgl fragment pixel playground gpu effect",
+    "name": {
+      "en": "Shader Playground",
+      "ru": "Шейдеры"
+    },
+    "desc": {
+      "en": "Write and preview GLSL or HLSL fragment shaders live in WebGL with presets, uniforms and PNG export.",
+      "ru": "Пишите и смотрите фрагментные шейдеры GLSL и HLSL прямо в WebGL: пресеты, юниформы и экспорт PNG."
+    }
+  },
+  {
+    "id": "media-metadata",
+    "group": "media",
+    "keywords": "metadata exif xmp id3 photo video author created date gps location google yandex maps",
+    "name": {
+      "en": "Media Metadata",
+      "ru": "Метаданные файлов"
+    },
+    "desc": {
+      "en": "View and edit title, author, creation date and location; embed XMP into JPEG/PNG, ID3 into MP3 or export JSON.",
+      "ru": "Просмотр и редактирование названия, автора, даты и геолокации; XMP для JPEG/PNG, ID3 для MP3 или JSON."
     }
   },
   {
