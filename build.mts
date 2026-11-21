@@ -9,7 +9,7 @@
  *   node build.mts --watch       incremental watch build
  */
 import { context, build, type BuildOptions } from 'esbuild';
-import { mkdir } from 'node:fs/promises';
+import { copyFile, mkdir } from 'node:fs/promises';
 
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
@@ -44,6 +44,9 @@ const webviewOptions: BuildOptions = {
 
 await import('./scripts/generate-catalog.mts');
 await mkdir('dist', { recursive: true });
+await mkdir('media/vendor', { recursive: true });
+// LGPL-3.0: lamejs is shipped as a separate, unminified vendor script so it can be replaced.
+await copyFile('node_modules/@breezystack/lamejs/dist/lamejs.iife.js', 'media/vendor/lamejs.iife.js');
 
 if (watch) {
   const host = await context(hostOptions);

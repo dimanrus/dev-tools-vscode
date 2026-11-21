@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" data-host-lang="en" data-startup-tool="converters-json-yaml" data-icon-uri="../media/icon.png">
+<html lang="en" data-host-lang="en" data-startup-tool="" data-icon-uri="../media/icon.png">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; media-src 'self' blob:;"
+      content="default-src 'none'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; media-src 'self' blob:; connect-src https: http://127.0.0.1:* http://localhost:*;"
     />
     <title>Dev Tools — preview</title>
     <link rel="stylesheet" href="../media/devtools.css" />
@@ -36,11 +36,11 @@
         --vscode-font-size: 13px;
         --vscode-editor-font-family: "SFMono-Regular", Menlo, Consolas, monospace;
       }
-      body { background: #1f1f1f; }
     </style>
   </head>
   <body>
     <div id="app"></div>
+    <script src="../media/vendor/lamejs.iife.js"></script>
     <script src="../dist/webview.js?v=5"></script>
   </body>
 </html>

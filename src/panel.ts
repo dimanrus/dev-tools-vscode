@@ -8,6 +8,15 @@ interface RpcMessage {
   id?: number;
   method?: string;
   params?: unknown;
+  tool?: string;
+  file?: PanelFile;
+  lang?: string;
+}
+
+export interface PanelFile {
+  name: string;
+  mime: string;
+  dataUrl: string;
 }
 
 let cachedTemplate: string | undefined;
@@ -36,11 +45,14 @@ export class DevToolsPanel {
     return DevToolsPanel.current;
   }
 
-  static async show(context: vscode.ExtensionContext, toolId?: string): Promise<void> {
+  static async show(context: vscode.ExtensionContext, toolId?: string, file?: PanelFile): Promise<void> {
     const column = vscode.window.activeTextEditor?.viewColumn ?? vscode.ViewColumn.One;
     if (DevToolsPanel.current) {
       DevToolsPanel.current.panel.reveal(column);
       if (toolId) void DevToolsPanel.current.panel.webview.postMessage({ type: 'open-tool', tool: toolId });
+      if (toolId && file) {
+        void DevToolsPanel.current.panel.webview.postMessage({ type: 'open-file', tool: toolId, file });
+      }
       return;
     }
 
@@ -57,10 +69,13 @@ export class DevToolsPanel {
     const instance = new DevToolsPanel(panel, context);
     DevToolsPanel.current = instance;
     await instance.render(toolId);
+    if (toolId && file) instance.queue({ type: 'open-file', tool: toolId, file });
   }
 
   private readonly panel: vscode.WebviewPanel;
   private readonly context: vscode.ExtensionContext;
+  private ready = false;
+  private readonly pending: Array<Record<string, unknown>> = [];
 
   private constructor(panel: vscode.WebviewPanel, context: vscode.ExtensionContext) {
     this.panel = panel;
@@ -79,6 +94,7 @@ export class DevToolsPanel {
   private async render(initialTool?: string): Promise<void> {
     const webview = this.panel.webview;
     const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.js'));
+    const vendorUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'vendor', 'lamejs.iife.js'));
     const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'devtools.css'));
     const iconUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'icon.png'));
     const template = await loadTemplate(this.context);
@@ -91,6 +107,7 @@ export class DevToolsPanel {
       .replaceAll('{{cspSource}}', webview.cspSource)
       .replaceAll('{{nonce}}', nonce)
       .replaceAll('{{scriptUri}}', scriptUri.toString())
+      .replaceAll('{{vendorUri}}', vendorUri.toString())
       .replaceAll('{{styleUri}}', styleUri.toString())
       .replaceAll('{{iconUri}}', iconUri.toString())
       .replaceAll('{{hostLang}}', resolveLanguage())
@@ -99,6 +116,11 @@ export class DevToolsPanel {
   }
 
   private async onMessage(message: RpcMessage): Promise<void> {
+    if (message?.type === 'ready') {
+      this.ready = true;
+      for (const queued of this.pending.splice(0)) void this.panel.webview.postMessage(queued);
+      return;
+    }
     if (!message || message.type !== 'rpc' || typeof message.id !== 'number') return;
     try {
       const result = await handleRpc(String(message.method), message.params);
@@ -110,6 +132,11 @@ export class DevToolsPanel {
         error: error instanceof Error ? error.message : String(error),
       });
     }
+  }
+
+  private queue(message: Record<string, unknown>): void {
+    if (this.ready) void this.panel.webview.postMessage(message);
+    else this.pending.push(message);
   }
 
   private dispose(): void {

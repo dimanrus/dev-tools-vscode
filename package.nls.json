@@ -2,6 +2,8 @@
   "extension.description": "A developer toolbox in one place: converters, encoders, formatters, generators, testers, icons and more.",
   "command.open.title": "Open Dev Tools",
   "command.openTool.title": "Open Dev Tools: specific tool",
+  "command.openWith.title": "Open in Dev Tools…",
+  "command.licenses.title": "Third-party licenses",
   "command.category": "Dev Tools",
   "configuration.title": "Dev Tools",
   "config.language.description": "Interface language of the Dev Tools panel.",
