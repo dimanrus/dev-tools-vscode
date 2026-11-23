@@ -5,7 +5,7 @@
 <h1 align="center">🧰 Dev Tools Toolbox for VS Code</h1>
 
 <p align="center">
-  <strong>A developer toolbox in one place — 56 tools inside a single panel.</strong><br />
+  <strong>A developer toolbox in one place — 66 tools inside a single panel.</strong><br />
   English · <a href="README.ru.md">Русский</a>
 </p>
 
@@ -13,7 +13,7 @@
   <img alt="Version 1.1.0" src="https://img.shields.io/badge/version-1.1.0-blue?style=flat-square" />
   <img alt="VS Code 1.105+" src="https://img.shields.io/badge/VS%20Code-1.105%2B-007ACC?style=flat-square" />
   <img alt="TypeScript 7" src="https://img.shields.io/badge/TypeScript-7-3178C6?style=flat-square" />
-  <img alt="64 tools" src="https://img.shields.io/badge/tools-64-f97316?style=flat-square" />
+  <img alt="66 tools" src="https://img.shields.io/badge/tools-66-f97316?style=flat-square" />
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-22c55e?style=flat-square" />
   <img alt="English and Russian" src="https://img.shields.io/badge/languages-EN%20%7C%20RU-8b5cf6?style=flat-square" />
 </p>
@@ -22,7 +22,7 @@ Dev Tools bundles the utilities developers reach for every day — JSON/YAML con
 
 ## ✨ Highlights
 
-- **64 tools** organised into eleven groups with instant search (`Ctrl+K`).
+- **66 tools** organised into eleven groups with instant search (`Ctrl+K`).
 - **Start page:** opening the panel shows every tool grouped on a full-width home grid; the house button in the header brings you back.
 - **Shell controls:** hide/show the tool sidebar (hidden by default on the home page), switch between light and dark themes, change the language and open the third-party license window right from the header — the sidebar and theme choices are remembered between sessions.
 - **Collapsible sections** — every panel block folds with the chevron in its header.
@@ -30,6 +30,7 @@ Dev Tools bundles the utilities developers reach for every day — JSON/YAML con
 - **Three ways in:** Command Palette / shortcut, an Activity Bar launcher with a native tool tree, and a status bar button that opens the panel directly.
 - **Bilingual UI** (English / Russian) that follows your VS Code display language and can be switched on the fly.
 - **Local by default** — every calculation happens on your machine. Hashing, GZIP, RSA key generation and X.509 parsing run in the extension host, and so do the cipher modes that only OpenSSL provides (CCM, OCB, SIV, XTS, OFB, Camellia, ARIA, SM4); everything else runs in the webview.
+- **FFmpeg-powered media** — conversion, stream probing, frame snapshots and ffplay sessions use your installed `ffmpeg`, `ffprobe` and `ffplay`; the paths are configurable in settings.
 - **No configuration required** — open the panel and start typing.
 - **Theme-aware interface** built on VS Code theme colors (light, dark and high-contrast).
 - **Keyboard driven** — open with `Ctrl+Alt+D` (macOS: `Cmd+Alt+D`), search with `Ctrl+K`.
@@ -137,6 +138,8 @@ Dev Tools bundles the utilities developers reach for every day — JSON/YAML con
 | **CAD Editor** | SketchUp-style modelling: snapped footprints, face Push/Pull (sides included) with hover highlight, vertex/face/grid snapping for measuring and line drawing, precise metre dimensions, tape measure, layers, components and instances, a Move/Rotate/Scale gizmo for selected solids, camera presets above the always-visible viewport, saved camera scenes, solid/wireframe/blueprint styles, textures, OBJ/STL/GLB/FBX/DAE/3DS import and OBJ/STL/GLB/PNG export. |
 | **Animation Studio** | 2D and 3D keyframe animation with a full-width timeline that labels every object on the left, shows keys as diamonds and zooms with Ctrl+wheel or ±, a resizable stage (80% by default, 30% minimum, hover-only splitter), resolution presets from Full HD to 9:16 Story plus custom sizes, icon toolbars for shapes (rect, ellipse, text, line, box, sphere, torus, pyramid, triangle, cylinder, rod) and gizmo modes, object renaming and grouping, side panels in tabs, on-canvas 2D arrows/rotation/scale handles, a 3D Move/Rotate/Scale gizmo with live values, SVG and OBJ/STL/GLB/GLTF import, project save/load, Lottie JSON, animated GIF, PNG and WebM export (exported frames never include the transform gizmo). |
 | **Media Metadata** | Edit title, author, creation date and geo location; embeds XMP into JPEG/PNG, ID3 into MP3, or exports a JSON sidecar. Opens Google or Yandex Maps at the chosen coordinates. |
+| **FFmpeg Converter** | Transcode, remux, trim, resize and extract audio with the local `ffmpeg`: MP4 (H.264/H.265), WebM (VP9/Opus), MKV remux, animated GIF, MP3/WAV/FLAC, CRF and encoder presets, NVENC/QSV/VA-API/VideoToolbox hardware encoding, a copyable command preview, live progress, cancellation and output reveal. |
+| **Stream Viewer** | Probe and play RTSP, RTMP(S), HLS (`.m3u8`), DASH (`.mpd`), SRT, RTP, MPEG-TS over UDP/TCP, HTTP(S), FTP/SFTP, local files and capture devices with `ffprobe`/`ffplay`. TCP/UDP/HTTP RTSP transport, optional low-latency flags (off by default), custom headers, User-Agent and Referer, collapsible advanced settings, stream tables, PNG frame snapshots without opening a window, ffplay logs and a ready-to-copy command. |
 | **Shader Playground** | Write GLSL ES 1.00 or ES 3.00 (`#version 300 es`) and HLSL fragment shaders and see them rendered live in WebGL2 with `uv`, `u_time`, `u_resolution`, `u_mouse` (vec2/vec4) and Shadertoy aliases, predefined `PI`/`TAU`/`E`, `#include` from http(s) URLs (inlined, nested, `<lygia/…>` via unpkg), presets, a basic HLSL→GLSL transpiler, resolution presets and PNG export. |
 
 ### 🧪 Testers
