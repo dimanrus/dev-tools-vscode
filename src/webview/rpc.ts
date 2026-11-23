@@ -1,4 +1,5 @@
 /** Request/response bridge to the extension host (Node.js side). */
+import { getLang } from './i18n.ts';
 import { isInVsCode, vscode } from './vscode-api.ts';
 
 interface Pending {
@@ -6,18 +7,56 @@ interface Pending {
   reject: (reason: Error) => void;
 }
 
+/** Events pushed by long-running host operations (media jobs, players). */
+export type HostEventListener = (event: string, payload: Record<string, unknown>) => void;
+
 let sequence = 0;
 const pending = new Map<number, Pending>();
+const hostEventListeners = new Set<HostEventListener>();
 
-window.addEventListener('message', (event: MessageEvent) => {
-  const message = event.data as { type?: string; id?: number; result?: unknown; error?: string };
-  if (!message || message.type !== 'rpc-result' || typeof message.id !== 'number') return;
-  const entry = pending.get(message.id);
-  if (!entry) return;
-  pending.delete(message.id);
-  if (message.error) entry.reject(new Error(message.error));
-  else entry.resolve(message.result);
-});
+/** Version mismatches (new webview + extension host started before the last build) get a clear hint. */
+function describeHostError(message: string): Error {
+  if (/Unknown RPC method:\s*media/i.test(message)) {
+    return new Error(
+      getLang() === 'ru'
+        ? 'Процесс расширения запущен со старой сборкой Dev Tools. Перезагрузите окно VS Code (Developer: Reload Window) или перезапустите Extension Development Host.'
+        : 'The extension host is running an older Dev Tools build. Reload the VS Code window (Developer: Reload Window) or restart the Extension Development Host.',
+    );
+  }
+  return new Error(message);
+}
+
+// The catalog generator imports the tool registry in Node, where `window` does not exist.
+if (typeof window !== 'undefined') {
+  window.addEventListener('message', (event: MessageEvent) => {
+    const message = event.data as {
+      type?: string;
+      id?: number;
+      result?: unknown;
+      error?: string;
+      event?: string;
+      payload?: unknown;
+    };
+    if (!message) return;
+    if (message.type === 'host-event' && typeof message.event === 'string') {
+      const payload = (message.payload ?? {}) as Record<string, unknown>;
+      for (const listener of Array.from(hostEventListeners)) listener(message.event, payload);
+      return;
+    }
+    if (message.type !== 'rpc-result' || typeof message.id !== 'number') return;
+    const entry = pending.get(message.id);
+    if (!entry) return;
+    pending.delete(message.id);
+    if (message.error) entry.reject(describeHostError(message.error));
+    else entry.resolve(message.result);
+  });
+}
+
+/** Subscribes to host-pushed events; returns an unsubscribe function. */
+export function onHostEvent(listener: HostEventListener): () => void {
+  hostEventListeners.add(listener);
+  return () => hostEventListeners.delete(listener);
+}
 
 export function rpc<T = unknown>(method: string, params?: unknown): Promise<T> {
   if (!isInVsCode) {

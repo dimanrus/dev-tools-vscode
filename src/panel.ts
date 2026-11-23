@@ -1,6 +1,7 @@
 /** The single webview panel that hosts the whole Dev Tools UI. */
 import { randomBytes } from 'node:crypto';
 import * as vscode from 'vscode';
+import { disposeMedia } from './media.ts';
 import { handleRpc } from './rpc.ts';
 
 interface RpcMessage {
@@ -17,6 +18,8 @@ export interface PanelFile {
   name: string;
   mime: string;
   dataUrl: string;
+  /** Absolute path when the file came from the file system. */
+  path?: string;
 }
 
 let cachedTemplate: string | undefined;
@@ -123,7 +126,9 @@ export class DevToolsPanel {
     }
     if (!message || message.type !== 'rpc' || typeof message.id !== 'number') return;
     try {
-      const result = await handleRpc(String(message.method), message.params);
+      const result = await handleRpc(String(message.method), message.params, (event, payload) => {
+        void this.panel.webview.postMessage({ type: 'host-event', event, payload });
+      });
       await this.panel.webview.postMessage({ type: 'rpc-result', id: message.id, result });
     } catch (error) {
       await this.panel.webview.postMessage({
@@ -140,6 +145,7 @@ export class DevToolsPanel {
   }
 
   private dispose(): void {
+    disposeMedia();
     if (DevToolsPanel.current === this) DevToolsPanel.current = undefined;
     this.panel.dispose();
   }

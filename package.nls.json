@@ -13,5 +13,8 @@
   "viewsContainer.title": "Dev Tools",
   "view.launcher.name": "Tools",
   "config.showStatusBar.description": "Show a Dev Tools button in the status bar that opens the panel directly.",
-  "config.startupTool.description": "Tool identifier opened by default, for example `converters-json-yaml`. Leave empty to restore the last used tool."
+  "config.startupTool.description": "Tool identifier opened by default, for example `converters-json-yaml`. Leave empty to restore the last used tool.",
+  "config.ffmpegPath.description": "Path to the `ffmpeg` executable used by the FFmpeg Converter and stream frame capture (absolute path or a name from `PATH`).",
+  "config.ffprobePath.description": "Path to the `ffprobe` executable used to inspect media files and streams.",
+  "config.ffplayPath.description": "Path to the `ffplay` executable used by the Stream Viewer. It is part of the full FFmpeg distribution."
 }

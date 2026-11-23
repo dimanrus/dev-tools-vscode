@@ -43,6 +43,17 @@
     "video",
     "audio",
     "mp3",
+    "ffmpeg",
+    "ffplay",
+    "ffprobe",
+    "transcode",
+    "rtsp",
+    "rtmp",
+    "hls",
+    "dash",
+    "srt",
+    "iptv",
+    "stream",
     "3d",
     "render",
     "lightroom",
@@ -178,6 +189,21 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "%config.showStatusBar.description%"
+        },
+        "devTools.ffmpegPath": {
+          "type": "string",
+          "default": "ffmpeg",
+          "markdownDescription": "%config.ffmpegPath.description%"
+        },
+        "devTools.ffprobePath": {
+          "type": "string",
+          "default": "ffprobe",
+          "markdownDescription": "%config.ffprobePath.description%"
+        },
+        "devTools.ffplayPath": {
+          "type": "string",
+          "default": "ffplay",
+          "markdownDescription": "%config.ffplayPath.description%"
         }
       }
     }

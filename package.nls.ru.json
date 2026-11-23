@@ -13,5 +13,8 @@
   "viewsContainer.title": "Dev Tools",
   "view.launcher.name": "Инструменты",
   "config.showStatusBar.description": "Показывать кнопку Dev Tools в строке состояния, которая открывает панель напрямую.",
-  "config.startupTool.description": "Идентификатор инструмента, открываемого по умолчанию, например `converters-json-yaml`. Оставьте пустым, чтобы восстанавливать последний использованный инструмент."
+  "config.startupTool.description": "Идентификатор инструмента, открываемого по умолчанию, например `converters-json-yaml`. Оставьте пустым, чтобы восстанавливать последний использованный инструмент.",
+  "config.ffmpegPath.description": "Путь к исполняемому файлу `ffmpeg`, который используют конвертер FFmpeg и захват кадров потоков (абсолютный путь или имя из `PATH`).",
+  "config.ffprobePath.description": "Путь к исполняемому файлу `ffprobe`, который анализирует медиафайлы и потоки.",
+  "config.ffplayPath.description": "Путь к исполняемому файлу `ffplay`, который использует просмотрщик потоков. Входит в полную поставку FFmpeg."
 }

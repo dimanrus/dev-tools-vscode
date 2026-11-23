@@ -18,6 +18,8 @@ export interface IncomingFile {
   name: string;
   mime: string;
   dataUrl: string;
+  /** Absolute path when the file came from the VS Code explorer. */
+  path?: string;
 }
 
 export interface ToolContext {

@@ -3,6 +3,20 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, generateKeyPa
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { promisify } from 'node:util';
 import * as vscode from 'vscode';
+import {
+  cancelConvert,
+  mediaInfo,
+  pickMediaFile,
+  playMedia,
+  probeMedia,
+  revealMediaFile,
+  runConvert,
+  saveMediaFile,
+  snapshotMedia,
+  stageMediaFile,
+  stopPlay,
+  type MediaEmit,
+} from './media.ts';
 
 const generateKeyPairAsync = promisify(generateKeyPair);
 
@@ -176,7 +190,7 @@ async function fetchText(params: Record<string, unknown>): Promise<{ url: string
   }
 }
 
-export async function handleRpc(method: string, params: unknown): Promise<unknown> {
+export async function handleRpc(method: string, params: unknown, emit: MediaEmit = () => {}): Promise<unknown> {
   const values = (params ?? {}) as Record<string, unknown>;
   switch (method) {
     case 'hash':
@@ -191,6 +205,28 @@ export async function handleRpc(method: string, params: unknown): Promise<unknow
       return runCipher(values);
     case 'fetchText':
       return fetchText(values);
+    case 'mediaInfo':
+      return mediaInfo();
+    case 'mediaProbe':
+      return probeMedia(values);
+    case 'mediaRun':
+      return runConvert(values, emit);
+    case 'mediaCancel':
+      return cancelConvert(values);
+    case 'mediaPlay':
+      return playMedia(values, emit);
+    case 'mediaStop':
+      return stopPlay(values);
+    case 'mediaSnapshot':
+      return snapshotMedia(values);
+    case 'mediaPick':
+      return pickMediaFile(values);
+    case 'mediaSave':
+      return saveMediaFile(values);
+    case 'mediaReveal':
+      return revealMediaFile(values);
+    case 'mediaStage':
+      return stageMediaFile(values);
     case 'openExternal': {
       const url = String(values.url ?? '');
       if (!/^https?:\/\//i.test(url)) throw new Error('Only http(s) links can be opened.');
