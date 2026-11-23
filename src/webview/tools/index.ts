@@ -26,6 +26,8 @@ import { cadEditorTools } from './cad-editor.ts';
 import { animationTools } from './animation.ts';
 import { shaderTools } from './shader.ts';
 import { mediaMetadataTools } from './media-metadata.ts';
+import { ffmpegTools } from './ffmpeg-convert.ts';
+import { streamViewerTools } from './stream-viewer.ts';
 import { testerTools } from './testers.ts';
 import { iconTools } from './icons.ts';
 import { thirdPartyTools } from './thirdparty.ts';
@@ -71,6 +73,8 @@ export const tools: ToolDef[] = [
   ...animationTools,
   ...shaderTools,
   ...mediaMetadataTools,
+  ...ffmpegTools,
+  ...streamViewerTools,
   ...testerTools,
   ...iconTools,
   ...thirdPartyTools,

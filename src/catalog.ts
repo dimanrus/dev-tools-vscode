@@ -701,6 +701,32 @@ export const CATALOG: CatalogEntry[] = [
     }
   },
   {
+    "id": "media-ffmpeg-convert",
+    "group": "media",
+    "keywords": "ffmpeg video convert transcode remux mp4 mkv webm gif mp3 extract audio h264 h265 vp9 av1 crf hardware",
+    "name": {
+      "en": "FFmpeg Converter",
+      "ru": "Конвертер FFmpeg"
+    },
+    "desc": {
+      "en": "Transcode, remux, trim, resize and extract audio with the local ffmpeg binary, with live progress.",
+      "ru": "Перекодирование, ремукс, обрезка, изменение размера и извлечение звука локальным ffmpeg с прогрессом."
+    }
+  },
+  {
+    "id": "media-stream-viewer",
+    "group": "media",
+    "keywords": "ffplay ffprobe stream rtsp rtmp hls m3u8 dash mpd srt udp tcp mpegts iptv camera ip camera rtsp player live",
+    "name": {
+      "en": "Stream Viewer",
+      "ru": "Просмотр потоков"
+    },
+    "desc": {
+      "en": "Probe and play RTSP, RTMP, HLS, DASH, SRT, MPEG-TS and HTTP streams with ffprobe and ffplay.",
+      "ru": "Анализ и воспроизведение потоков RTSP, RTMP, HLS, DASH, SRT, MPEG-TS и HTTP через ffprobe и ffplay."
+    }
+  },
+  {
     "id": "testers-jsonpath",
     "group": "testers",
     "keywords": "jsonpath json query filter test",

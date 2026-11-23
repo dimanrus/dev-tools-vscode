@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { disposeMedia } from './media.ts';
 import { DevToolsPanel } from './panel.ts';
 import { DevToolsTreeProvider } from './sidebar.ts';
 
@@ -17,6 +18,8 @@ const FILE_TOOLS: FileTool[] = [
   { id: 'media-video-editor', en: 'Video Editor', ru: 'Видеоредактор', extensions: ['mp4', 'mov', 'webm', 'mkv'] },
   { id: 'media-scene-editor', en: '3D Scene', ru: '3D-сцена', extensions: ['obj', 'stl', 'glb', 'gltf'] },
   { id: 'media-metadata', en: 'Media Metadata', ru: 'Метаданные файлов', extensions: ['png', 'jpg', 'jpeg', 'webp', 'mp3', 'wav', 'mp4', 'mov', 'webm'] },
+  { id: 'media-ffmpeg-convert', en: 'FFmpeg Converter', ru: 'Конвертер FFmpeg', extensions: ['mp4', 'mov', 'webm', 'mkv', 'avi', 'flv', 'ts', 'm4v', 'mpg', 'mpeg', 'mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'gif'] },
+  { id: 'media-stream-viewer', en: 'Stream Viewer', ru: 'Просмотр потоков', extensions: ['mp4', 'mov', 'webm', 'mkv', 'ts', 'm3u8', 'mpd'] },
   { id: 'converters-pdf-toolkit', en: 'PDF Toolkit', ru: 'PDF-инструменты', extensions: ['pdf'] },
 ];
 
@@ -64,18 +67,30 @@ async function openFileInTool(context: vscode.ExtensionContext, uri?: vscode.Uri
   );
   if (!picked) return;
   try {
+    const mime = MIME_BY_EXTENSION[extension] ?? 'application/octet-stream';
+    // FFmpeg tools work on the original file, so hand them the path without copying gigabytes through the webview.
+    const pathBased = picked.tool === 'media-ffmpeg-convert' || picked.tool === 'media-stream-viewer';
+    if (pathBased) {
+      await DevToolsPanel.show(context, picked.tool, {
+        name: target.path.split('/').pop() ?? `file.${extension}`,
+        mime,
+        dataUrl: '',
+        path: target.fsPath,
+      });
+      return;
+    }
     const stat = await vscode.workspace.fs.stat(target);
     if (stat.size > 96 * 1024 * 1024) {
       void vscode.window.showWarningMessage(vscode.l10n.t('File is too large to open in the webview (limit 96 MB).'));
       return;
     }
     const bytes = await vscode.workspace.fs.readFile(target);
-    const mime = MIME_BY_EXTENSION[extension] ?? 'application/octet-stream';
     const dataUrl = `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
     await DevToolsPanel.show(context, picked.tool, {
       name: target.path.split('/').pop() ?? `file.${extension}`,
       mime,
       dataUrl,
+      path: target.fsPath,
     });
   } catch (error) {
     void vscode.window.showErrorMessage(
@@ -123,5 +138,6 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {
-  /* nothing to clean up: the panel disposes itself */
+  disposeMedia();
+  /* the panel disposes itself */
 }
