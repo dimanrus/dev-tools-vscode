@@ -1374,10 +1374,12 @@ function imageEditorTool(): ReturnType<typeof defineTool> {
             ),
           );
           inspector.appendChild(
-            knobField(ctx.pick('Font size', 'Размер шрифта'), 8, 200, layer.size, (value) => {
-              layer.size = value;
-              scheduleRender();
-            }),
+            knobGrid(
+              knobField(ctx.pick('Font size', 'Размер шрифта'), 8, 200, layer.size, (value) => {
+                layer.size = value;
+                scheduleRender();
+              }),
+            ),
           );
           inspector.appendChild(
             field(
@@ -1399,10 +1401,12 @@ function imageEditorTool(): ReturnType<typeof defineTool> {
           inspector.appendChild(positionFields(layer));
         } else if (layer.kind === 'image') {
           inspector.appendChild(
-            knobField(ctx.pick('Scale', 'Масштаб'), 5, 400, Math.round(layer.scale * 100), (value) => {
-              layer.scale = value / 100;
-              scheduleRender();
-            }),
+            knobGrid(
+              knobField(ctx.pick('Scale', 'Масштаб'), 5, 400, Math.round(layer.scale * 100), (value) => {
+                layer.scale = value / 100;
+                scheduleRender();
+              }),
+            ),
           );
           inspector.appendChild(positionFields(layer));
           inspector.appendChild(
@@ -1629,9 +1633,11 @@ function imageEditorTool(): ReturnType<typeof defineTool> {
           checkbox(ctx.pick('Filled', 'Заливка'), shapeFilled, (value) => {
             shapeFilled = value;
           }),
-          knobField(ctx.pick('Stroke width', 'Толщина линии'), 1, 60, shapeThickness, (value) => {
-            shapeThickness = value;
-          }),
+          knobGrid(
+            knobField(ctx.pick('Stroke width', 'Толщина линии'), 1, 60, shapeThickness, (value) => {
+              shapeThickness = value;
+            }),
+          ),
           h(
             'div',
             { class: 'dt-hint' },
@@ -1693,9 +1699,11 @@ function imageEditorTool(): ReturnType<typeof defineTool> {
               },
             ),
           ),
-          knobField(ctx.pick('Quality', 'Качество'), 10, 100, Math.round(exportQuality * 100), (value) => {
-            exportQuality = value / 100;
-          }),
+          knobGrid(
+            knobField(ctx.pick('Quality', 'Качество'), 10, 100, Math.round(exportQuality * 100), (value) => {
+              exportQuality = value / 100;
+            }),
+          ),
           toolbar(
             btn(ctx.pick('Download image', 'Скачать изображение'), () => void exportImage(), {
               variant: 'primary',

@@ -14,6 +14,7 @@ import {
   note,
   pane,
   knobField as rangeField,
+  knobGrid,
   readText,
   resultPane,
   select,
@@ -398,10 +399,12 @@ function pngCompressorTool(): ReturnType<typeof defineTool> {
           'div',
           { class: 'dt-stack' },
           upload,
-          rangeField(ctx.pick('Scale', 'Масштаб'), 10, 100, 100, (value) => {
-            scale = value / 100;
-            compress();
-          }),
+          knobGrid(
+            rangeField(ctx.pick('Scale', 'Масштаб'), 10, 100, 100, (value) => {
+              scale = value / 100;
+              compress();
+            }),
+          ),
           error,
           pane(ctx.pick('Result', 'Результат'), h('div', { class: 'dt-stack' }, preview, info, toolbar(downloadBtn(() => result ?? new Blob(), () => `${(file?.name ?? 'image').replace(/\.png$/i, '')}.min.png`)))),
           note(ctx.pick('PNG is lossless: the main gains come from reducing the resolution.', 'PNG — формат без потерь: основной выигрыш даёт уменьшение разрешения.'), 'info'),

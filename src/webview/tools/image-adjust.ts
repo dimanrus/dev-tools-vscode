@@ -8,6 +8,7 @@ import {
   fileDrop,
   pane,
   knobField as rangeField,
+  knobGrid,
   readDataUrl,
   select,
   setError,
@@ -398,9 +399,9 @@ function imageAdjustTool(): ReturnType<typeof defineTool> {
             scheduleRender();
           }),
         );
-        const knobGrid = h('div', { class: 'dt-knob-grid' });
+        const grid = h('div', { class: 'dt-knob-grid' });
         for (const slider of SLIDERS) {
-          knobGrid.appendChild(
+          grid.appendChild(
             knob({
               label: ctx.pick(slider.label[0], slider.label[1]),
               icon: slider.icon,
@@ -416,7 +417,7 @@ function imageAdjustTool(): ReturnType<typeof defineTool> {
             }),
           );
         }
-        knobGrid.appendChild(
+        grid.appendChild(
           knob({
             label: ctx.pick('Sharpening', 'Резкость'),
             icon: '<path d="M12 3l1.8 5.2l5.2 1.8l-5.2 1.8l-1.8 5.2l-1.8 -5.2l-5.2 -1.8l5.2 -1.8z"/>',
@@ -431,7 +432,7 @@ function imageAdjustTool(): ReturnType<typeof defineTool> {
             },
           }),
         );
-        controls.appendChild(knobGrid);
+        controls.appendChild(grid);
         controls.appendChild(
           h(
             'div',
@@ -538,9 +539,11 @@ function imageAdjustTool(): ReturnType<typeof defineTool> {
               },
             ),
           ),
-          rangeField(ctx.pick('Quality', 'Качество'), 10, 100, Math.round(exportQuality * 100), (value) => {
-            exportQuality = value / 100;
-          }),
+          knobGrid(
+            rangeField(ctx.pick('Quality', 'Качество'), 10, 100, Math.round(exportQuality * 100), (value) => {
+              exportQuality = value / 100;
+            }),
+          ),
           btn(ctx.pick('Download image', 'Скачать изображение'), () => void exportImage(), { variant: 'primary' }),
         ),
       );

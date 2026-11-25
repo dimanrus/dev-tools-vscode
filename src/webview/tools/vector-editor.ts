@@ -13,6 +13,7 @@ import {
   note,
   pane,
   knobField as rangeField,
+  knobGrid,
   readText,
   resizableSplit,
   select,
@@ -1228,19 +1229,17 @@ function vectorEditorTool(): ReturnType<typeof defineTool> {
             ),
           ),
         );
-        inspector.appendChild(
+        const knobs = knobGrid(
           rangeField(ctx.pick('Stroke width', 'Толщина обводки'), 0, 40, style.strokeWidth, (value) =>
             applyStyleChange((target) => (target.strokeWidth = value)),
           ),
-        );
-        inspector.appendChild(
           rangeField(ctx.pick('Opacity', 'Прозрачность'), 0, 100, Math.round(style.opacity * 100), (value) =>
             applyStyleChange((target) => (target.opacity = value / 100)),
           ),
         );
 
         if (shape?.geom.kind === 'rect') {
-          inspector.appendChild(
+          knobs.appendChild(
             rangeField(ctx.pick('Corner radius', 'Скругление'), 0, 200, shape.geom.radius, (value) => {
               if (shape.geom.kind !== 'rect') return;
               shape.geom.radius = value;
@@ -1249,6 +1248,7 @@ function vectorEditorTool(): ReturnType<typeof defineTool> {
             }),
           );
         }
+        inspector.appendChild(knobs);
 
         if (shape?.geom.kind === 'text') {
           const geom = shape.geom;
@@ -1273,11 +1273,13 @@ function vectorEditorTool(): ReturnType<typeof defineTool> {
             ),
           );
           inspector.appendChild(
-            rangeField(ctx.pick('Font size', 'Размер шрифта'), 8, 200, geom.size, (value) => {
-              geom.size = value;
-              scheduleRender();
-              refreshSource();
-            }),
+            knobGrid(
+              rangeField(ctx.pick('Font size', 'Размер шрифта'), 8, 200, geom.size, (value) => {
+                geom.size = value;
+                scheduleRender();
+                refreshSource();
+              }),
+            ),
           );
           inspector.appendChild(
             h(
@@ -1546,9 +1548,11 @@ function vectorEditorTool(): ReturnType<typeof defineTool> {
                 h(
                   'div',
                   { class: 'dt-stack' },
-                  rangeField(ctx.pick('PNG scale', 'Масштаб PNG'), 100, 400, 100, (value) => {
-                    exportScale = value / 100;
-                  }),
+                  knobGrid(
+                    rangeField(ctx.pick('PNG scale', 'Масштаб PNG'), 100, 400, 100, (value) => {
+                      exportScale = value / 100;
+                    }),
+                  ),
                   toolbar(
                     btn(ctx.pick('Download SVG', 'Скачать SVG'), downloadSvg, {
                       variant: 'primary',
