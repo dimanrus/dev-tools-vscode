@@ -169,6 +169,7 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
       let radius = 14;
       let drag: CadDrag | null = null;
       let orbiting = false;
+      let middleOrbit = false;
       let moved = false;
       let gizmoPointer = false;
       let faceDrag: FaceDrag | null = null;
@@ -1047,6 +1048,16 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
             ? ctx.pick('face', 'грань')
             : ctx.pick('grid', 'сетка');
       canvas.addEventListener('pointerdown', (event) => {
+        if (event.button === 1) {
+          // Middle button always orbits, whatever tool is active.
+          event.preventDefault();
+          middleOrbit = true;
+          orbiting = true;
+          moved = false;
+          lastPointer = { x: event.clientX, y: event.clientY };
+          canvas.setPointerCapture(event.pointerId);
+          return;
+        }
         if (event.button !== 0) return;
         if (controls.axis !== null || controls.dragging) {
           gizmoPointer = true;
@@ -1132,6 +1143,15 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
       });
 
       canvas.addEventListener('pointermove', (event) => {
+        if (middleOrbit) {
+          const dx = event.clientX - lastPointer.x;
+          const dy = event.clientY - lastPointer.y;
+          lastPointer = { x: event.clientX, y: event.clientY };
+          theta -= dx / 160;
+          phi = clamp(phi - dy / 160, 0.12, Math.PI - 0.12);
+          applyCamera();
+          return;
+        }
         if (faceDrag) {
           const dx = event.clientX - faceDrag.startX;
           const dy = event.clientY - faceDrag.startY;
@@ -1241,6 +1261,11 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
 
       canvas.addEventListener('pointerup', (event) => {
         if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+        if (middleOrbit) {
+          middleOrbit = false;
+          orbiting = false;
+          return;
+        }
         if (gizmoPointer) {
           gizmoPointer = false;
           return;
@@ -1739,8 +1764,8 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
               ),
               stage,
               h('div', { class: 'dt-hint' }, ctx.pick(
-                'Sketch on the grid; Push/Pull drags the highlighted face (sides included); Line and Measure snap to vertices, faces and grid. Double-click or right-click to finish a line. In Select mode the gizmo moves, rotates and scales the selected solid.',
-                'Чертите по сетке; Push/Pull тянет подсвеченную грань (включая боковые); Линия и Рулетка привязываются к вершинам, граням и сетке. Двойной или правый клик завершает линию. В режиме «Выбор» гизмо двигает, вращает и масштабирует тело.',
+                'Sketch on the grid; Push/Pull drags the highlighted face (sides included); Line and Measure snap to vertices, faces and grid. Drag with the middle mouse button to orbit the camera; double-click or right-click to finish a line. In Select mode the gizmo moves, rotates and scales the selected solid.',
+                'Чертите по сетке; Push/Pull тянет подсвеченную грань (включая боковые); Линия и Рулетка привязываются к вершинам, граням и сетке. Средняя кнопка мыши вращает камеру; двойной или правый клик завершает линию. В режиме «Выбор» гизмо двигает, вращает и масштабирует тело.',
               )),
             ),
             h(

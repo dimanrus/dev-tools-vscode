@@ -99,6 +99,7 @@ function sceneEditorTool(): ReturnType<typeof defineTool> {
       let transparent = false;
       let transformMode: TransformMode = 'move';
       let orbiting = false;
+      let middleOrbit = false;
       let moved = false;
       let gizmoPointer = false;
       let lastPointer = { x: 0, y: 0 };
@@ -633,6 +634,16 @@ function sceneEditorTool(): ReturnType<typeof defineTool> {
       const canvas = renderer.domElement;
       canvas.style.touchAction = 'none';
       canvas.addEventListener('pointerdown', (event) => {
+        if (event.button === 1) {
+          // Middle button always orbits, whatever is selected underneath.
+          event.preventDefault();
+          middleOrbit = true;
+          orbiting = true;
+          moved = false;
+          lastPointer = { x: event.clientX, y: event.clientY };
+          canvas.setPointerCapture(event.pointerId);
+          return;
+        }
         if (event.button !== 0) return;
         if (controls.axis !== null || controls.dragging) {
           gizmoPointer = true;
@@ -664,6 +675,11 @@ function sceneEditorTool(): ReturnType<typeof defineTool> {
       });
       canvas.addEventListener('pointerup', (event) => {
         if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+        if (middleOrbit) {
+          middleOrbit = false;
+          orbiting = false;
+          return;
+        }
         if (gizmoPointer) {
           gizmoPointer = false;
           return;
@@ -984,8 +1000,8 @@ function sceneEditorTool(): ReturnType<typeof defineTool> {
                 'div',
                 { class: 'dt-hint' },
                 ctx.pick(
-                  'Click a face of the view cube to snap the camera, drag empty space to orbit, Shift+drag to pan, wheel zooms. World axes keep the gizmo aligned with the scene, object axes follow the rotation of the selected object.',
-                  'Кликните по грани куба вида, чтобы зафиксировать камеру; тяните пустое место — орбита, Shift+тяните — сдвиг, колесо — зум. Мировые оси держат гизмо по осям сцены, оси объекта поворачиваются вместе с выбранным объектом.',
+                  'Click a face of the view cube to snap the camera, drag empty space or the middle mouse button to orbit, Shift+drag to pan, wheel zooms. World axes keep the gizmo aligned with the scene, object axes follow the rotation of the selected object.',
+                  'Кликните по грани куба вида, чтобы зафиксировать камеру; тяните пустое место или среднюю кнопку мыши — орбита, Shift+тяните — сдвиг, колесо — зум. Мировые оси держат гизмо по осям сцены, оси объекта поворачиваются вместе с выбранным объектом.',
                 ),
               ),
             ),
