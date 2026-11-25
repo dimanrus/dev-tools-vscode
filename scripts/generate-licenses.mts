@@ -8,7 +8,7 @@
  * package must have its license text shipped next to the code.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 
 interface PackageInfo {
@@ -53,12 +53,31 @@ const PURPOSE: Record<string, { en: string; ru: string }> = {
 
 const TRANSITIVE = { en: 'transitive dependency', ru: 'транзитивная зависимость' };
 
+/**
+ * Optional Node-only fallbacks that never reach the webview bundle (pdf.js pulls
+ * @napi-rs/canvas for server-side rendering), so they are left out of the notices.
+ */
+const IGNORED_PACKAGES = [/^@napi-rs\/canvas(-|$)/];
+
 const LICENSE_FILE = /^(licen[cs]e|copying|notice)([._-]|$)/i;
 const EXTRA_TEXTS_DIR = join(ROOT, 'scripts', 'license-texts');
 /** Canonical license texts appended when a package uses a secondary license. */
 const EXTRA_TEXTS: Array<{ match: RegExp; file: string; heading: string }> = [
   { match: /LGPL-3\.0/i, file: 'LGPL-3.0.txt', heading: 'GNU Lesser General Public License v3.0' },
   { match: /Zlib/i, file: 'Zlib.txt', heading: 'zlib License (zlib-derived code inside the package)' },
+];
+
+/**
+ * Package folders that carry licenses of third-party code compiled into assets we ship.
+ * pdf.js bundles its JBIG2/OpenJPEG/QCMS/QuickJS decoders as WASM next to the worker.
+ */
+const PACKAGE_EXTRA_DIRS: Array<{ package: string; dir: string; pattern: RegExp; heading: string }> = [
+  {
+    package: 'pdfjs-dist',
+    dir: 'wasm',
+    pattern: /^LICENSE_/,
+    heading: 'Bundled decoders in media/vendor/pdfjs-wasm (PDFium JBIG2, OpenJPEG, QCMS, QuickJS)',
+  },
 ];
 
 const MIT_TEXT = `MIT License
@@ -107,6 +126,7 @@ for (const dir of packageDirs) {
   }
   const name = String(manifest.name);
   const version = String(manifest.version);
+  if (IGNORED_PACKAGES.some((pattern) => pattern.test(name))) continue;
   const key = `${name}@${version}`;
   if (seen.has(key)) continue;
   seen.add(key);
@@ -150,6 +170,18 @@ for (const dir of packageDirs) {
     if (!extra.match.test(license)) continue;
     const extraText = readFileSync(join(EXTRA_TEXTS_DIR, extra.file), 'utf8').trim();
     licenseText += `\n\n----------------------------------------------------------------------\n${extra.heading}\n----------------------------------------------------------------------\n\n${extraText}`;
+  }
+
+  for (const extra of PACKAGE_EXTRA_DIRS) {
+    if (extra.package !== name) continue;
+    const extraDir = join(dir, extra.dir);
+    if (!existsSync(extraDir)) continue;
+    const parts = readdirSync(extraDir)
+      .filter((file) => extra.pattern.test(file))
+      .sort()
+      .map((file) => readFileSync(join(extraDir, file), 'utf8').trim());
+    if (!parts.length) continue;
+    licenseText += `\n\n----------------------------------------------------------------------\n${extra.heading}\n----------------------------------------------------------------------\n\n${parts.join('\n\n')}`;
   }
 
   packages.push({

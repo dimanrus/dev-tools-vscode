@@ -77,7 +77,12 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
       };
 
       const workerUri = document.documentElement.dataset.pdfWorkerUri ?? '';
-      const standardFontsUri = workerUri.replace(/pdf\.worker\.min\.mjs$/, 'standard_fonts/');
+      const vendorUri = (folder: string): string | undefined =>
+        workerUri ? workerUri.replace(/pdf\.worker\.min\.mjs$/, `${folder}/`) : undefined;
+      const standardFontsUri = vendorUri('standard_fonts');
+      const wasmUri = vendorUri('pdfjs-wasm');
+      const iccUri = vendorUri('pdfjs-iccs');
+      const cMapUri = vendorUri('pdfjs-cmaps');
 
       const thumbs = new Map<number, string>();
       const thumbImages = new Map<number, HTMLImageElement>();
@@ -104,8 +109,11 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
             const task = pdfjs.getDocument({
               // pdf.js transfers (detaches) the buffer, so always hand it a copy.
               data: new Uint8Array(source.bytes),
-              isEvalSupported: false,
-              standardFontDataUrl: standardFontsUri || undefined,
+              standardFontDataUrl: standardFontsUri,
+              wasmUrl: wasmUri,
+              iccUrl: iccUri,
+              cMapUrl: cMapUri,
+              cMapPacked: true,
             });
             return task.promise;
           })();
