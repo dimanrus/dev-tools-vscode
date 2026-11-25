@@ -1,4 +1,4 @@
-/** Generators: hash, lorem ipsum, password, UUID, ULID, RSA, semver. */
+/** Generators: hash, password, UUID, ULID, RSA, semver. */
 import { compare, inc, major, minor, patch, satisfies, valid, validRange } from 'semver';
 import {
   area,
@@ -126,94 +126,6 @@ function hashTool(): ReturnType<typeof defineTool> {
         ),
       );
       void compute();
-    },
-  });
-}
-
-const LOREM_WORDS =
-  'lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim ad minim veniam quis nostrud exercitation ullamco laboris nisi aliquip ex ea commodo consequat duis aute irure in reprehenderit voluptate velit esse cillum eu fugiat nulla pariatur excepteur sint occaecat cupidatat non proident sunt culpa qui officia deserunt mollit anim id est laborum'.split(
-    ' ',
-  );
-
-function loremTool(): ReturnType<typeof defineTool> {
-  return defineTool({
-    id: 'generators-lorem',
-    group: 'generators',
-    icon: '<path d="M4 6h16"/><path d="M4 10h16"/><path d="M4 14h10"/><path d="M4 18h13"/>',
-    name: { en: 'Lorem Ipsum', ru: 'Lorem Ipsum' },
-    desc: {
-      en: 'Generate placeholder paragraphs, sentences or words as text or HTML.',
-      ru: 'Генерация текста-заполнителя: абзацы, предложения или слова, текст или HTML.',
-    },
-    keywords: 'lorem ipsum placeholder dummy text filler',
-    fill: true,
-    mount(root, ctx) {
-      let paragraphs = 3;
-      let sentences = 4;
-      let words = 12;
-      let startWithLorem = true;
-      let asHtml = false;
-      const output = area({ readOnly: true, rows: 16 });
-
-      const random = <T,>(items: T[]): T => items[Math.floor(Math.random() * items.length)];
-
-      const buildSentence = (): string => {
-        const parts: string[] = [];
-        for (let index = 0; index < words; index++) parts.push(random(LOREM_WORDS));
-        const text = parts.join(' ');
-        return text.charAt(0).toUpperCase() + text.slice(1) + '.';
-      };
-
-      const generate = () => {
-        const result: string[] = [];
-        for (let paragraph = 0; paragraph < paragraphs; paragraph++) {
-          const sentencesList: string[] = [];
-          for (let sentence = 0; sentence < sentences; sentence++) sentencesList.push(buildSentence());
-          let text = sentencesList.join(' ');
-          if (paragraph === 0 && startWithLorem) text = `Lorem ipsum dolor sit amet, ${text.charAt(0).toLowerCase()}${text.slice(1)}`;
-          result.push(text);
-        }
-        output.value = asHtml ? result.map((text) => `<p>${text}</p>`).join('\n') : result.join('\n\n');
-      };
-
-      const controls = h(
-        'div',
-        { class: 'dt-stack' },
-        rangeField(ctx.pick('Paragraphs', 'Абзацев'), 1, 20, paragraphs, (value) => {
-          paragraphs = value;
-          generate();
-        }),
-        rangeField(ctx.pick('Sentences per paragraph', 'Предложений в абзаце'), 1, 12, sentences, (value) => {
-          sentences = value;
-          generate();
-        }),
-        rangeField(ctx.pick('Words per sentence', 'Слов в предложении'), 3, 30, words, (value) => {
-          words = value;
-          generate();
-        }),
-        h(
-          'div',
-          { class: 'dt-inline-options' },
-          checkbox(ctx.pick('Start with "Lorem ipsum"', 'Начинать с "Lorem ipsum"'), true, (value) => {
-            startWithLorem = value;
-            generate();
-          }),
-          checkbox(ctx.pick('Wrap in <p> tags', 'Обернуть в теги <p>'), false, (value) => {
-            asHtml = value;
-            generate();
-          }),
-        ),
-      );
-
-      generate();
-
-      root.append(
-        h(
-          'div',
-          { class: 'dt-stack' },
-          split(controls, pane(ctx.pick('Result', 'Результат'), output, [copyBtn(() => output.value), downloadBtn(() => output.value, 'lorem.txt')])),
-        ),
-      );
     },
   });
 }
@@ -674,4 +586,4 @@ function semverTool(): ReturnType<typeof defineTool> {
   });
 }
 
-export const generatorTools = [hashTool(), loremTool(), passwordTool(), uuidTool(), ulidTool(), rsaTool(), semverTool()];
+export const generatorTools = [hashTool(), passwordTool(), uuidTool(), ulidTool(), rsaTool(), semverTool()];

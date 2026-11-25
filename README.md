@@ -5,7 +5,7 @@
 <h1 align="center">🧰 Dev Tools Toolbox for VS Code</h1>
 
 <p align="center">
-  <strong>A developer toolbox in one place — 66 tools inside a single panel.</strong><br />
+  <strong>A developer toolbox in one place — 65 tools inside a single panel.</strong><br />
   English · <a href="README.ru.md">Русский</a>
 </p>
 
@@ -13,7 +13,7 @@
   <img alt="Version 1.1.0" src="https://img.shields.io/badge/version-1.1.0-blue?style=flat-square" />
   <img alt="VS Code 1.105+" src="https://img.shields.io/badge/VS%20Code-1.105%2B-007ACC?style=flat-square" />
   <img alt="TypeScript 7" src="https://img.shields.io/badge/TypeScript-7-3178C6?style=flat-square" />
-  <img alt="66 tools" src="https://img.shields.io/badge/tools-66-f97316?style=flat-square" />
+  <img alt="65 tools" src="https://img.shields.io/badge/tools-65-f97316?style=flat-square" />
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-22c55e?style=flat-square" />
   <img alt="English and Russian" src="https://img.shields.io/badge/languages-EN%20%7C%20RU-8b5cf6?style=flat-square" />
 </p>
@@ -22,7 +22,7 @@ Dev Tools bundles the utilities developers reach for every day — JSON/YAML con
 
 ## ✨ Highlights
 
-- **66 tools** organised into eleven groups with instant search (`Ctrl+K`).
+- **65 tools** organised into eleven groups with instant search (`Ctrl+K`).
 - **Start page:** opening the panel shows every tool grouped on a full-width home grid; the house button in the header brings you back.
 - **Shell controls:** hide/show the tool sidebar (hidden by default on the home page), switch between light and dark themes, change the language and open the third-party license window right from the header — the sidebar and theme choices are remembered between sessions.
 - **Collapsible sections** — every panel block folds with the chevron in its header.
@@ -75,7 +75,7 @@ Dev Tools bundles the utilities developers reach for every day — JSON/YAML con
 | Tool | What it does |
 | --- | --- |
 | **Base64 Text** | UTF-8 Base64 encoding and decoding, including the URL-safe alphabet. |
-| **Base64 Image** | Image ⇄ data URL conversion with live preview and download. |
+| **Base64 File** | Any file ⇄ Base64 data URL with image preview or a file card (name, MIME, size) and download. |
 | **Certificate Decoder** | X.509 subject, issuer, validity, SAN, key usage and SHA-1/SHA-256 fingerprints. |
 | **GZIP** | Compress and decompress GZIP streams transported as Base64. |
 | **HTML Entities** | Encode and decode HTML entities with a reference table. |
@@ -108,13 +108,11 @@ Dev Tools bundles the utilities developers reach for every day — JSON/YAML con
 | Tool | What it does |
 | --- | --- |
 | **Hash / Checksum** | MD5, SHA-1, SHA-256/384/512 and CRC-32, with optional HMAC and hex/Base64 output. |
-| **Lorem Ipsum** | Paragraphs, sentences and words with optional `<p>` wrapping. |
 | **Password Generator** | Cryptographically strong passwords with entropy and strength feedback. |
 | **UUID Generator** | RFC 4122 v4, time-ordered v7 and nil UUIDs in bulk. |
 | **ULID Generator** | Sortable ULIDs with a decoded timestamp. |
 | **RSA Key Generator** | 2048/3072/4096-bit key pairs in PKCS#8 and SPKI PEM. |
 | **Semver Calculator** | Version comparison, range checks and the next patch/minor/major releases. |
-| **Fake Data Generator** | Names, phones, addresses, emails, companies and dates in RU/EN with seeds, custom templates and CSV/JSON export. |
 | **Fake Data Generator** | Names, phones, addresses, emails, companies and dates in RU/EN with seeds, custom templates and CSV/JSON export. |
 
 ### 🎨 Graphic & Color

@@ -428,19 +428,6 @@ export const CATALOG: CatalogEntry[] = [
     }
   },
   {
-    "id": "generators-lorem",
-    "group": "generators",
-    "keywords": "lorem ipsum placeholder dummy text filler",
-    "name": {
-      "en": "Lorem Ipsum",
-      "ru": "Lorem Ipsum"
-    },
-    "desc": {
-      "en": "Generate placeholder paragraphs, sentences or words as text or HTML.",
-      "ru": "Генерация текста-заполнителя: абзацы, предложения или слова, текст или HTML."
-    }
-  },
-  {
     "id": "generators-password",
     "group": "generators",
     "keywords": "password generator random secure entropy",
