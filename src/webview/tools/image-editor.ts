@@ -157,6 +157,7 @@ function imageEditorTool(): ReturnType<typeof defineTool> {
       let exportFormat: ExportFormat = 'image/png';
       let exportQuality = 0.92;
       let scaleContent = true;
+      let zoom = 1;
 
       const undoStack: Snapshot[] = [];
       const redoStack: Snapshot[] = [];
@@ -409,13 +410,48 @@ function imageEditorTool(): ReturnType<typeof defineTool> {
         display.height = Math.max(1, Math.round(docHeight));
         sizeWidth.value = String(Math.round(docWidth));
         sizeHeight.value = String(Math.round(docHeight));
+        applyZoom();
       };
+
+      /** Ctrl/Cmd + wheel scales the canvas inside the scrolling stage. */
+      const applyZoom = (): void => {
+        if (zoom === 1) {
+          display.style.width = '';
+          display.style.height = '';
+          stage.classList.remove('is-zoomed');
+        } else {
+          display.style.width = `${Math.max(1, Math.round(display.width * zoom))}px`;
+          display.style.height = `${Math.max(1, Math.round(display.height * zoom))}px`;
+          stage.classList.add('is-zoomed');
+        }
+        updateStats();
+      };
+
+      stage.addEventListener(
+        'wheel',
+        (event) => {
+          if (!event.ctrlKey && !event.metaKey) return;
+          event.preventDefault();
+          const previous = zoom;
+          const next = clamp(previous * (event.deltaY < 0 ? 1.15 : 1 / 1.15), 0.1, 8);
+          if (next === previous) return;
+          const rect = display.getBoundingClientRect();
+          const localX = event.clientX - rect.left;
+          const localY = event.clientY - rect.top;
+          const stageRect = stage.getBoundingClientRect();
+          zoom = next;
+          applyZoom();
+          stage.scrollLeft = display.offsetLeft + (localX / previous) * next - (event.clientX - stageRect.left);
+          stage.scrollTop = display.offsetTop + (localY / previous) * next - (event.clientY - stageRect.top);
+        },
+        { passive: false },
+      );
 
       const updateStats = (): void => {
         docStats.textContent = `${docWidth} × ${docHeight} · ${ctx.pick(
           `${layers.length} layer${layers.length === 1 ? '' : 's'}`,
           `${layers.length} сл.`,
-        )}`;
+        )}${zoom === 1 ? '' : ` · ${Math.round(zoom * 100)}%`}`;
       };
 
       // ---------- rendering ----------

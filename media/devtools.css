@@ -2396,6 +2396,17 @@ textarea.dt-input {
   user-select: none;
 }
 
+/* Ctrl/Cmd + wheel zoom sets explicit pixel sizes, so the fit-to-width cap must go. */
+.dt-ie-stage.is-zoomed {
+  justify-content: flex-start;
+}
+
+.dt-ie-stage.is-zoomed .dt-ie-canvas {
+  max-width: none;
+  max-height: none;
+  height: auto;
+}
+
 .dt-ie-stage[data-tool='brush'] .dt-ie-canvas,
 .dt-ie-stage[data-tool='fill'] .dt-ie-canvas,
 .dt-ie-stage[data-tool='shape'] .dt-ie-canvas,
