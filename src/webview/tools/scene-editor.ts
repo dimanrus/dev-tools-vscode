@@ -967,8 +967,17 @@ function sceneEditorTool(): ReturnType<typeof defineTool> {
             h(
               'div',
               { class: 'dt-col' },
-              h('div', { class: 'dt-toolbar' }, modeSegment, spaceSegment, snapToggle, h('span', { class: 'dt-grow' }), stats),
-              h('div', { class: 'dt-toolbar' }, shapeToolbar, btn(ctx.pick('Import model', 'Импорт модели'), () => modelInput.click(), { variant: 'ghost' })),
+              h(
+                'div',
+                { class: 'dt-toolbar dt-scene-toolbar' },
+                modeSegment,
+                spaceSegment,
+                snapToggle,
+                shapeToolbar,
+                btn(ctx.pick('Import model', 'Импорт модели'), () => modelInput.click(), { variant: 'ghost' }),
+                h('span', { class: 'dt-grow' }),
+                stats,
+              ),
               stage,
               modelDrop,
               h(

@@ -3035,6 +3035,69 @@ textarea.dt-input {
   gap: 4px;
 }
 
+/* Keep the scene/CAD controls on a single row; the object counter truncates first. */
+.dt-scene-toolbar,
+.dt-cad-toolbar {
+  gap: 6px;
+}
+
+.dt-scene-toolbar .dt-ie-stats,
+.dt-cad-toolbar .dt-ie-stats {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dt-cad-toolbar > .dt-color-input {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 28px;
+  padding: 2px;
+  border-radius: var(--dt-radius-sm);
+  border: 1px solid var(--dt-border);
+  background: var(--dt-surface-2);
+  cursor: pointer;
+}
+
+.dt-scene-toolbar .dt-grow,
+.dt-cad-toolbar .dt-grow {
+  min-width: 0;
+}
+
+.dt-cad-toolbar {
+  flex-wrap: nowrap;
+}
+
+.dt-cad-toolbar .dt-btn-icon.is-active {
+  background: color-mix(in srgb, var(--dt-accent) 24%, transparent);
+  border-color: color-mix(in srgb, var(--dt-accent) 55%, transparent);
+  color: var(--dt-accent);
+}
+
+/* The solids/measurement counter sits over the stage to keep the toolbar on one row. */
+.dt-cad-stats {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  display: flex;
+  gap: 6px;
+  max-width: calc(100% - 20px);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.dt-cad-stats .dt-ie-stats {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--dt-surface-2) 82%, transparent);
+  border: 1px solid var(--dt-border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---------- shader playground ---------- */
 
 .dt-shader-canvas {

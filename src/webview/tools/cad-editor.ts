@@ -133,6 +133,20 @@ const ICONS = {
   duplicate: '<path d="M7 7m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z"/><path d="M5 15v-8a2 2 0 0 1 2 -2h8"/>',
 } as const;
 
+const CAD_VIEW_FACES: Array<{
+  view: string;
+  className: string;
+  label: [string, string];
+  title: [string, string];
+}> = [
+  { view: 'front', className: 'is-front', label: ['Front', 'Перед'], title: ['Front view', 'Вид спереди'] },
+  { view: 'back', className: 'is-back', label: ['Back', 'Зад'], title: ['Back view', 'Вид сзади'] },
+  { view: 'right', className: 'is-right', label: ['Right', 'Право'], title: ['Right view', 'Вид справа'] },
+  { view: 'left', className: 'is-left', label: ['Left', 'Лево'], title: ['Left view', 'Вид слева'] },
+  { view: 'top', className: 'is-top', label: ['Top', 'Верх'], title: ['Top view', 'Вид сверху'] },
+  { view: 'bottom', className: 'is-bottom', label: ['Bottom', 'Низ'], title: ['Bottom view', 'Вид снизу'] },
+];
+
 function cadEditorTool(): ReturnType<typeof defineTool> {
   return defineTool({
     id: 'media-cad-editor',
@@ -801,6 +815,8 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
           target.z + radius * sin * Math.cos(theta),
         );
         camera.lookAt(target);
+        viewCubeCube.style.transform =
+          `rotateX(${((phi * 180) / Math.PI - 90).toFixed(2)}deg) rotateY(${(-(theta * 180) / Math.PI).toFixed(2)}deg)`;
       };
 
       const pointerNdc = (event: PointerEvent | MouseEvent): THREE.Vector2 => {
@@ -1532,12 +1548,42 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
 
       const toolSegment = segmented(
         [
-          { value: 'select', label: ctx.pick('Select', 'Выбор') },
-          { value: 'rect', label: ctx.pick('Rect', 'Прям.') },
-          { value: 'circle', label: ctx.pick('Circle', 'Круг') },
-          { value: 'line', label: ctx.pick('Line', 'Линия') },
-          { value: 'pushpull', label: ctx.pick('Push/Pull', 'Тяни/толкай') },
-          { value: 'measure', label: ctx.pick('Measure', 'Рулетка') },
+          {
+            value: 'select',
+            label: ctx.pick('Select', 'Выбор'),
+            title: ctx.pick('Select and transform', 'Выбор и трансформация'),
+            icon: '<path d="M6 3l5 17l2.6 -6.6L20 10.8z"/>',
+          },
+          {
+            value: 'rect',
+            label: ctx.pick('Rectangle', 'Прямоугольник'),
+            title: ctx.pick('Draw a rectangle', 'Нарисовать прямоугольник'),
+            icon: '<rect x="4" y="6" width="16" height="12" rx="1.6"/>',
+          },
+          {
+            value: 'circle',
+            label: ctx.pick('Circle', 'Круг'),
+            title: ctx.pick('Draw a circle', 'Нарисовать круг'),
+            icon: '<circle cx="12" cy="12" r="8"/>',
+          },
+          {
+            value: 'line',
+            label: ctx.pick('Line', 'Линия'),
+            title: ctx.pick('Draw a line', 'Нарисовать линию'),
+            icon: '<path d="M5 19L19 5"/>',
+          },
+          {
+            value: 'pushpull',
+            label: ctx.pick('Push/Pull', 'Тяни/толкай'),
+            title: ctx.pick('Push or pull a face', 'Выдавить или вдавить грань'),
+            icon: '<rect x="3.5" y="7" width="8" height="8" rx="1"/><path d="M14 12h6"/><path d="M17 9l3 3l-3 3"/>',
+          },
+          {
+            value: 'measure',
+            label: ctx.pick('Measure', 'Рулетка'),
+            title: ctx.pick('Measure a distance', 'Измерить расстояние'),
+            icon: '<path d="M3 16.5l13.5 -13.5l4 4l-13.5 13.5z"/><path d="M7 12.5l2 2"/><path d="M10 9.5l2 2"/><path d="M13 6.5l2 2"/>',
+          },
         ],
         'rect',
         (value) => {
@@ -1565,9 +1611,24 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
 
       const modeSegment = segmented(
         [
-          { value: 'move', label: ctx.pick('Move', 'Двигать') },
-          { value: 'rotate', label: ctx.pick('Rotate', 'Вращать') },
-          { value: 'scale', label: ctx.pick('Scale', 'Масштаб') },
+          {
+            value: 'move',
+            label: ctx.pick('Move', 'Двигать'),
+            title: ctx.pick('Move', 'Двигать'),
+            icon: '<path d="M12 3v18"/><path d="M3 12h18"/><path d="M12 3l-2.6 2.6"/><path d="M12 3l2.6 2.6"/><path d="M12 21l-2.6 -2.6"/><path d="M12 21l2.6 -2.6"/><path d="M3 12l2.6 -2.6"/><path d="M3 12l2.6 2.6"/><path d="M21 12l-2.6 -2.6"/><path d="M21 12l-2.6 2.6"/>',
+          },
+          {
+            value: 'rotate',
+            label: ctx.pick('Rotate', 'Вращать'),
+            title: ctx.pick('Rotate', 'Вращать'),
+            icon: '<path d="M4.5 12a7.5 7.5 0 1 1 2.7 5.8"/><path d="M4 20v-5.5h5.5"/>',
+          },
+          {
+            value: 'scale',
+            label: ctx.pick('Scale', 'Масштаб'),
+            title: ctx.pick('Scale', 'Масштаб'),
+            icon: '<rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.2"/><path d="M14 20.5h6.5V14"/><path d="M20.5 20.5L13.5 13.5"/>',
+          },
         ],
         'move',
         (value) => {
@@ -1577,33 +1638,78 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
         },
       );
 
-      const viewButtons = h(
-        'div',
-        { class: 'dt-toolbar' },
-        btn(ctx.pick('Iso', 'Изо'), () => {
-          theta = Math.PI / 4;
-          phi = Math.PI / 3.4;
-          applyCamera();
-        }, { variant: 'ghost' }),
-        btn(ctx.pick('Top', 'Сверху'), () => {
-          theta = 0;
-          phi = 0.14;
-          applyCamera();
-        }, { variant: 'ghost' }),
-        btn(ctx.pick('Front', 'Спереди'), () => {
-          theta = 0;
-          phi = Math.PI / 2 - 0.05;
-          applyCamera();
-        }, { variant: 'ghost' }),
-        checkbox(ctx.pick('Snap 0.25', 'Привязка 0.25'), snap, (value) => {
-          snap = value;
-          controls.translationSnap = value ? 0.25 : null;
-          controls.rotationSnap = value ? Math.PI / 12 : null;
-          controls.scaleSnap = value ? 0.1 : null;
-        }),
+      const applySnap = (): void => {
+        controls.translationSnap = snap ? 0.25 : null;
+        controls.rotationSnap = snap ? Math.PI / 12 : null;
+        controls.scaleSnap = snap ? 0.1 : null;
+        snapBtn.classList.toggle('is-active', snap);
+        snapBtn.setAttribute('aria-pressed', String(snap));
+      };
+
+      const snapBtn = iconBtn(
+        '<path d="M6 4v7a6 6 0 0 0 12 0V4"/><path d="M4 4h4"/><path d="M16 4h4"/><path d="M6 11h12"/>',
+        ctx.pick('Snap to grid (0.25)', 'Привязка к сетке (0.25)'),
+        () => {
+          snap = !snap;
+          applySnap();
+        },
+        { variant: 'ghost' },
+      );
+      applySnap();
+
+      const setView = (view: string): void => {
+        const presets: Record<string, [number, number]> = {
+          iso: [Math.PI / 4, Math.PI / 3.4],
+          front: [0, Math.PI / 2 - 0.05],
+          back: [Math.PI, Math.PI / 2 - 0.05],
+          right: [Math.PI / 2, Math.PI / 2 - 0.05],
+          left: [-Math.PI / 2, Math.PI / 2 - 0.05],
+          top: [0, 0.14],
+          bottom: [0, Math.PI - 0.14],
+        };
+        const preset = presets[view];
+        if (!preset) return;
+        theta = preset[0];
+        phi = preset[1];
+        applyCamera();
+      };
+
+      const viewCubeCube = h('div', { class: 'dt-viewcube-cube' });
+      for (const face of CAD_VIEW_FACES) {
+        viewCubeCube.appendChild(
+          h('button', {
+            class: `dt-viewcube-face ${face.className}`,
+            type: 'button',
+            title: ctx.pick(face.title[0], face.title[1]),
+            text: ctx.pick(face.label[0], face.label[1]),
+            onclick: (event: MouseEvent) => {
+              event.stopPropagation();
+              setView(face.view);
+            },
+          }),
+        );
+      }
+      stage.append(
+        h('div', { class: 'dt-cad-stats' }, stats),
+        h(
+          'div',
+          { class: 'dt-viewcube', title: ctx.pick('Click a face to snap the camera', 'Клик по грани — фиксированный вид') },
+          h('div', { class: 'dt-viewcube-stage' }, viewCubeCube),
+          iconBtn(
+            '<path d="M12 3l8 4.4v9.2L12 21l-8 -4.4V7.4z"/><path d="M12 12l8 -4.6"/><path d="M12 12L4 7.4"/><path d="M12 12v9"/>',
+            ctx.pick('Isometric view', 'Изометрический вид'),
+            () => setView('iso'),
+            { variant: 'subtle', class: 'dt-viewcube-home' },
+          ),
+        ),
       );
 
-      const colorInput = h('input', { type: 'color', class: 'dt-color-input', value: color });
+      const colorInput = h('input', {
+        type: 'color',
+        class: 'dt-color-input',
+        value: color,
+        title: ctx.pick('New object color', 'Цвет нового объекта'),
+      });
       colorInput.addEventListener('input', () => {
         color = colorInput.value;
       });
@@ -1676,9 +1782,15 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
             h(
               'div',
               { class: 'dt-col' },
-              h('div', { class: 'dt-toolbar' }, toolSegment, h('span', { class: 'dt-grow' }), stats),
-              h('div', { class: 'dt-toolbar' }, modeSegment, field(ctx.pick('Color', 'Цвет'), colorInput)),
-              viewButtons,
+              h(
+                'div',
+                { class: 'dt-toolbar dt-cad-toolbar' },
+                toolSegment,
+                h('span', { class: 'dt-grow' }),
+                modeSegment,
+                colorInput,
+                snapBtn,
+              ),
               stage,
               h('div', { class: 'dt-hint' }, ctx.pick(
                 'Sketch on the grid; Push/Pull drags the highlighted face (sides included); Line and Measure snap to vertices, faces and grid. Double-click or right-click to finish a line. In Select mode the gizmo moves, rotates and scales the selected solid.',
