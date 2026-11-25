@@ -29,6 +29,8 @@ import {
 } from '../components.ts';
 import { clamp, h } from '../dom.ts';
 import { svgIcon } from '../dom.ts';
+import { parseDxf } from '../lib/dxf.ts';
+import { incomingToFile } from '../lib/incoming.ts';
 import { defineTool } from '../tool-types.ts';
 
 type CadTool = 'select' | 'rect' | 'circle' | 'pushpull' | 'measure' | 'line';
@@ -154,10 +156,10 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
     icon: '<path d="M4 20l4 -9l4 9z"/><path d="M14 20v-6h6v6z"/><path d="M4 7l4 -4l4 4l-4 4z"/><path d="M12 12l6 -3l4 3l-4 3z"/>',
     name: { en: 'CAD Editor', ru: 'CAD-редактор' },
     desc: {
-      en: 'Sketch footprints, push/pull any face, snap lines and measurements to vertices/faces, use layers/scenes and exchange OBJ/STL/GLB/FBX.',
-      ru: 'Черчение контуров, выдавливание любой грани, линии и замеры с привязкой к вершинам/граням, слои/сцены и обмен OBJ/STL/GLB/FBX.',
+      en: 'Sketch footprints, push/pull any face, snap lines and measurements to vertices/faces, use layers/scenes and exchange DXF/OBJ/STL/GLB/FBX.',
+      ru: 'Черчение контуров, выдавливание любой грани, линии и замеры с привязкой к вершинам/граням, слои/сцены и обмен DXF/OBJ/STL/GLB/FBX.',
     },
-    keywords: 'cad sketchup push pull face measure snap vertex line dimension layers scenes components obj stl glb fbx dae 3ds texture',
+    keywords: 'cad dxf dwg sketchup push pull face measure snap vertex line dimension layers scenes components obj stl glb fbx dae 3ds texture import',
     mount(root, ctx) {
       let nextId = 1;
       let nextLayerId = 2;
@@ -1385,6 +1387,34 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
       );
 
       // ---------- import / export ----------
+      /** DXF drawings are flat wireframes, so they are scaled to the sketch grid instead of the model size. */
+      const buildDxfObject = (text: string): { object: THREE.Object3D; skipped: number } | null => {
+        const drawing = parseDxf(text);
+        if (!drawing.paths.length) return null;
+        const positions: number[] = [];
+        const pushPoint = (point: { x: number; y: number; z: number }): void => {
+          // DXF is XY-up; lay it down on the editor ground plane.
+          positions.push(point.x, point.z, -point.y);
+        };
+        for (const path of drawing.paths) {
+          const points = path.points;
+          for (let index = 0; index < points.length - 1; index += 1) {
+            pushPoint(points[index]);
+            pushPoint(points[index + 1]);
+          }
+          if (path.closed && points.length > 2) {
+            pushPoint(points[points.length - 1]);
+            pushPoint(points[0]);
+          }
+        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        const lines = new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color: '#7dd3fc' }));
+        const group = new THREE.Group();
+        group.add(lines);
+        return { object: group, skipped: drawing.skipped };
+      };
+
       const importModel = async (file: File): Promise<void> => {
         setError(error, null);
         const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
@@ -1401,8 +1431,23 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
             object = collada?.scene ?? null;
           }
           else if (extension === '3ds') object = new TDSLoader().parse(await file.arrayBuffer(), '');
+          else if (extension === 'dxf') {
+            const drawn = buildDxfObject(await file.text());
+            if (!drawn) {
+              setError(error, ctx.pick('This DXF has no supported entities (LINE, LWPOLYLINE, POLYLINE, CIRCLE, ARC, 3DFACE).', 'В этом DXF нет поддерживаемых объектов (LINE, LWPOLYLINE, POLYLINE, CIRCLE, ARC, 3DFACE).'));
+              return;
+            }
+            object = drawn.object;
+          }
+          else if (extension === 'dwg' || extension === 'step' || extension === 'stp' || extension === 'igs' || extension === 'iges' || extension === 'sat' || extension === 'skp') {
+            setError(error, ctx.pick(
+              `${extension.toUpperCase()} cannot be read directly — export the drawing as DXF (or the model as OBJ/STL) and import that.`,
+              `${extension.toUpperCase()} не читается напрямую — экспортируйте чертёж в DXF (а модель — в OBJ/STL) и импортируйте его.`,
+            ));
+            return;
+          }
           if (!object) {
-            setError(error, ctx.pick('Supported: OBJ, STL, GLB, GLTF, FBX, DAE, 3DS.', 'Поддерживаются: OBJ, STL, GLB, GLTF, FBX, DAE, 3DS.'));
+            setError(error, ctx.pick('Supported: DXF, OBJ, STL, GLB, GLTF, FBX, DAE, 3DS.', 'Поддерживаются: DXF, OBJ, STL, GLB, GLTF, FBX, DAE, 3DS.'));
             return;
           }
           object.traverse((child) => {
@@ -1414,12 +1459,14 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
           const box = new THREE.Box3().setFromObject(object);
           const size = box.getSize(new THREE.Vector3());
           const maxSide = Math.max(size.x, size.y, size.z) || 1;
-          object.scale.multiplyScalar(3.2 / maxSide);
+          const target = extension === 'dxf' ? 9 : 3.2;
+          object.scale.multiplyScalar(target / maxSide);
           const fitted = new THREE.Box3().setFromObject(object);
           const center = fitted.getCenter(new THREE.Vector3());
           object.position.x -= center.x;
           object.position.z -= center.z;
           object.position.y -= fitted.min.y;
+          if (extension === 'dxf') object.position.y += 0.02;
           scene.add(object);
           const part: CadPart = {
             id: nextId++,
@@ -1432,7 +1479,7 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
             radius: 0,
             layerId: activeLayerId,
             componentId: null,
-            color: '#94a3b8',
+            color: extension === 'dxf' ? '#7dd3fc' : '#94a3b8',
             texture: null,
             visible: true,
             modelSource: extension,
@@ -1445,6 +1492,20 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
           setError(error, ctx.pick('Cannot read this 3D model.', 'Не удалось прочитать 3D-модель.'));
         }
       };
+
+      stage.addEventListener('dragover', (event) => {
+        if (!event.dataTransfer?.types.includes('Files')) return;
+        event.preventDefault();
+        stage.classList.add('is-dragover');
+      });
+      stage.addEventListener('dragleave', () => stage.classList.remove('is-dragover'));
+      stage.addEventListener('drop', (event) => {
+        stage.classList.remove('is-dragover');
+        const dropped = event.dataTransfer?.files?.[0];
+        if (!dropped) return;
+        event.preventDefault();
+        void importModel(dropped);
+      });
 
       const exportGroup = (): THREE.Group => {
         const group = new THREE.Group();
@@ -1504,7 +1565,7 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
       };
 
       const textureInput = h('input', { type: 'file', accept: 'image/*', class: 'dt-hidden' });
-      const modelInput = h('input', { type: 'file', accept: '.obj,.stl,.glb,.gltf,.fbx,.dae,.3ds', class: 'dt-hidden' });
+      const modelInput = h('input', { type: 'file', accept: '.dxf,.obj,.stl,.glb,.gltf,.fbx,.dae,.3ds', class: 'dt-hidden' });
 
       textureInput.addEventListener('change', () => {
         const file = textureInput.files?.[0];
@@ -1801,7 +1862,10 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
               'div',
               { class: 'dt-col' },
               pane(ctx.pick('Layers', 'Слои'), layersHost, [
-                btn(ctx.pick('Import model', 'Импорт модели'), () => modelInput.click(), { variant: 'ghost' }),
+                btn(ctx.pick('Import DXF / 3D', 'Импорт DXF / 3D'), () => modelInput.click(), {
+                  variant: 'ghost',
+                  title: ctx.pick('Open DXF, OBJ, STL, GLB, GLTF, FBX, DAE or 3DS', 'Открыть DXF, OBJ, STL, GLB, GLTF, FBX, DAE или 3DS'),
+                }),
               ]),
               pane(ctx.pick('Objects', 'Объекты'), list),
               pane(ctx.pick('Properties', 'Свойства'), inspector),
@@ -1842,6 +1906,8 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
       syncUi();
       resize();
       applyCamera();
+      const incoming = ctx.takeIncoming();
+      if (incoming) void importModel(incomingToFile(incoming));
 
       const loop = (): void => {
         if (!root.isConnected) return;

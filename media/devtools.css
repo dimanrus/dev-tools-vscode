@@ -3029,6 +3029,11 @@ textarea.dt-input {
   height: min(68vh, 640px);
 }
 
+.dt-cad-stage.is-dragover {
+  border-color: var(--dt-accent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--dt-accent) 45%, transparent);
+}
+
 /* Animation stage follows the project aspect ratio. */
 .dt-anim-3d {
   height: auto;
