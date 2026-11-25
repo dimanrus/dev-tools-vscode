@@ -1514,6 +1514,11 @@ textarea.dt-input {
   color: var(--dt-muted);
 }
 
+.dt-cron-command {
+  color: var(--dt-accent);
+  word-break: break-all;
+}
+
 .dt-cron-details,
 .dt-cron-runs {
   max-height: 360px;

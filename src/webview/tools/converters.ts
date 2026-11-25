@@ -43,13 +43,15 @@ function chronoTool(): ReturnType<typeof defineTool> {
       const error = errorSlot();
 
       const presets = [
-        { value: '*/5 * * * *', label: '*/5 * * * *' },
+        { value: '* * * * *', label: '* * * * *' },
+        { value: '*/5 * * * * /opt/script.sh', label: '*/5 * * * * /opt/script.sh' },
         { value: '0 * * * *', label: '0 * * * *' },
+        { value: '30 2 * * *', label: '30 2 * * *' },
         { value: '0 9 * * 1-5', label: '0 9 * * 1-5' },
-        { value: '30 2 1 * *', label: '30 2 1 * *' },
-        { value: '0 0 * * 0', label: '0 0 * * 0' },
+        { value: '0 4 * * 0', label: '0 4 * * 0' },
+        { value: '0 0 1 * *', label: '0 0 1 * *' },
         { value: '@daily', label: '@daily' },
-        { value: '@monthly', label: '@monthly' },
+        { value: '@reboot /opt/start_app.sh', label: '@reboot /opt/start_app.sh' },
       ];
       const presetSelect = select(
         [{ value: '', label: ctx.pick('Choose a preset…', 'Выберите шаблон…') }, ...presets.map((preset) => ({ value: preset.value, label: preset.label }))],
@@ -66,25 +68,42 @@ function chronoTool(): ReturnType<typeof defineTool> {
           const parsed = parseCron(input.value);
           const description = describeCron(parsed, ctx.lang());
           setError(error, null);
-          summary.replaceChildren(
+          const summaryNodes: HTMLElement[] = [
             h('div', { class: 'dt-cron-title' }, description.summary),
-            h('code', { class: 'dt-cron-raw' }, parsed.raw),
+            h('code', { class: 'dt-cron-raw' }, parsed.schedule),
+          ];
+          if (parsed.command) {
+            summaryNodes.push(h('code', { class: 'dt-cron-raw dt-cron-command' }, `$ ${parsed.command}`));
+          }
+          summary.replaceChildren(...summaryNodes);
+          detailsHost.replaceChildren(
+            table([ctx.pick('Field', 'Поле'), ctx.pick('Values', 'Значения')], description.details),
           );
-          detailsHost.replaceChildren(table(['Field', 'Values'], description.details));
-          const runs = nextRuns(parsed, new Date(), 8);
-          if (!runs.length) {
-            runsHost.replaceChildren(note(ctx.pick('No upcoming runs found.', 'Ближайшие запуски не найдены.'), 'warn'));
-          } else {
+          if (parsed.reboot) {
             runsHost.replaceChildren(
-              table(
-                [ctx.pick('Next run', 'Следующий запуск'), 'ISO 8601', ctx.pick('Weekday', 'День недели')],
-                runs.map((date) => [
-                  date.toLocaleString(ctx.lang() === 'ru' ? 'ru-RU' : 'en-GB'),
-                  date.toISOString(),
-                  date.toLocaleDateString(ctx.lang() === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'long' }),
-                ]),
+              note(
+                ctx.pick(
+                  '@reboot runs when the system starts, so there is no schedule to preview.',
+                  '@reboot выполняется при старте системы — расписание для предпросмотра отсутствует.',
+                ),
               ),
             );
+          } else {
+            const runs = nextRuns(parsed, new Date(), 8);
+            if (!runs.length) {
+              runsHost.replaceChildren(note(ctx.pick('No upcoming runs found.', 'Ближайшие запуски не найдены.'), 'warn'));
+            } else {
+              runsHost.replaceChildren(
+                table(
+                  [ctx.pick('Next run', 'Следующий запуск'), 'ISO 8601', ctx.pick('Weekday', 'День недели')],
+                  runs.map((date) => [
+                    date.toLocaleString(ctx.lang() === 'ru' ? 'ru-RU' : 'en-GB'),
+                    date.toISOString(),
+                    date.toLocaleDateString(ctx.lang() === 'ru' ? 'ru-RU' : 'en-GB', { weekday: 'long' }),
+                  ]),
+                ),
+              );
+            }
           }
         } catch (cause) {
           setError(error, cause instanceof Error ? cause.message : String(cause));
@@ -109,7 +128,7 @@ function chronoTool(): ReturnType<typeof defineTool> {
             field('Cron', input),
             h('div', { class: 'dt-inline-actions' }, presetSelect, btn(ctx.pick('Parse', 'Разобрать'), update, { variant: 'primary' })),
           ),
-          h('div', { class: 'dt-hint' }, 'minute hour day-of-month month day-of-week · * , - /'),
+          h('div', { class: 'dt-hint' }, 'minute hour day-of-month month day-of-week [command] · * , - / · @daily @weekly @reboot'),
           error,
           summary,
           h('div', { class: 'dt-split' }, h('div', { class: 'dt-col' }, pane(ctx.pick('Fields', 'Поля'), detailsHost)), h('div', { class: 'dt-col' }, pane(ctx.pick('Upcoming runs', 'Ближайшие запуски'), runsHost))),

@@ -20,6 +20,9 @@ const MACROS: Record<string, string> = {
 
 export interface ParsedCron {
   raw: string;
+  schedule: string;
+  command: string | null;
+  reboot: boolean;
   minutes: number[];
   hours: number[];
   daysOfMonth: number[];
@@ -28,6 +31,9 @@ export interface ParsedCron {
   domRestricted: boolean;
   dowRestricted: boolean;
 }
+
+const SCHEDULE_FIELD_COUNT = 5;
+const REBOOT_ALIAS = '@reboot';
 
 function toValue(token: string, names?: Record<string, number>): number {
   const trimmed = token.trim().toLowerCase();
@@ -72,14 +78,61 @@ function parseField(raw: string, min: number, max: number, names?: Record<string
 export function parseCron(expression: string): ParsedCron {
   const raw = expression.trim();
   if (!raw) throw new Error('Expression is empty');
-  const expanded = MACROS[raw.toLowerCase()] ?? raw;
-  const fields = expanded.split(/\s+/);
-  if (fields.length !== 5) {
-    throw new Error(`Expected 5 fields (minute hour day month weekday), got ${fields.length}`);
+
+  // A crontab line is `schedule [command]`: everything after the schedule is the command.
+  const tokens = raw.split(/\s+/);
+  let schedule: string;
+  let trailing: string[];
+  let reboot = false;
+
+  if (tokens[0].startsWith('@')) {
+    const alias = tokens[0].toLowerCase();
+    trailing = tokens.slice(1);
+    if (alias === REBOOT_ALIAS) {
+      reboot = true;
+      schedule = REBOOT_ALIAS;
+    } else {
+      const expansion = MACROS[alias];
+      if (!expansion) {
+        throw new Error(`Unknown alias "${tokens[0]}". Supported: ${[...Object.keys(MACROS), REBOOT_ALIAS].join(', ')}`);
+      }
+      schedule = expansion;
+    }
+  } else {
+    schedule = tokens.slice(0, SCHEDULE_FIELD_COUNT).join(' ');
+    trailing = tokens.slice(SCHEDULE_FIELD_COUNT);
+  }
+
+  const command = trailing.length ? trailing.join(' ') : null;
+
+  if (reboot) {
+    return {
+      raw,
+      schedule,
+      command,
+      reboot: true,
+      minutes: [],
+      hours: [],
+      daysOfMonth: [],
+      months: [],
+      daysOfWeek: [],
+      domRestricted: false,
+      dowRestricted: false,
+    };
+  }
+
+  const fields = schedule.split(/\s+/);
+  if (fields.length !== SCHEDULE_FIELD_COUNT) {
+    throw new Error(
+      `Expected ${SCHEDULE_FIELD_COUNT} schedule fields (minute hour day month weekday), got ${fields.length}`,
+    );
   }
   const daysOfWeek = parseField(fields[4], 0, 7, DOW_NAMES).map((day) => (day === 7 ? 0 : day));
   return {
-    raw: expanded,
+    raw,
+    schedule,
+    command,
+    reboot: false,
     minutes: parseField(fields[0], 0, 59),
     hours: parseField(fields[1], 0, 23),
     daysOfMonth: parseField(fields[2], 1, 31),
@@ -104,6 +157,7 @@ export function cronMatches(cron: ParsedCron, date: Date): boolean {
 }
 
 export function nextRuns(cron: ParsedCron, from: Date, count: number): Date[] {
+  if (cron.reboot) return [];
   const result: Date[] = [];
   const cursor = new Date(from.getTime());
   cursor.setSeconds(0, 0);
@@ -132,10 +186,30 @@ function stepOf(values: number[], min: number, max: number): number | null {
 }
 
 const MONTH_LABELS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const MONTH_LABELS_RU = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+const MONTH_LABELS_RU = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+const MONTH_IN_RU = ['январе', 'феврале', 'марте', 'апреле', 'мае', 'июне', 'июле', 'августе', 'сентябре', 'октябре', 'ноябре', 'декабре'];
 const DOW_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DOW_LABELS_RU = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+const DOW_DATIVE_RU = ['воскресеньям', 'понедельникам', 'вторникам', 'средам', 'четвергам', 'пятницам', 'субботам'];
 export const DOW_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function describeDays(days: number[], ru: boolean): string {
+  const isWeekdays = days.length === 5 && days.every((day) => day >= 1 && day <= 5);
+  const isWeekends = days.length === 2 && days[0] === 0 && days[1] === 6;
+  if (isWeekdays) return ru ? 'по будням' : 'on weekdays';
+  if (isWeekends) return ru ? 'по выходным' : 'on weekends';
+  const names = days.map((day) => (ru ? DOW_DATIVE_RU[day] : DOW_LABELS[day]));
+  const list = names.length > 1 ? `${names.slice(0, -1).join(', ')}${ru ? ' и ' : ' and '}${names[names.length - 1]}` : names[0];
+  return ru ? `по ${list}` : `on ${list}`;
+}
+
+function describeMonths(months: number[], ru: boolean, style: 'in' | 'list'): string {
+  const labels = ru ? (style === 'in' ? MONTH_IN_RU : MONTH_LABELS_RU) : MONTH_LABELS;
+  const names = months.map((month) => labels[month - 1]);
+  if (style === 'list') return names.join(', ');
+  const list = names.length > 1 ? `${names.slice(0, -1).join(', ')}${ru ? ' и ' : ' and '}${names[names.length - 1]}` : names[0];
+  return ru ? `в ${list}` : `in ${list}`;
+}
 
 function pad(value: number): string {
   return String(value).padStart(2, '0');
@@ -148,6 +222,11 @@ export interface CronDescription {
 
 export function describeCron(cron: ParsedCron, lang: 'en' | 'ru'): CronDescription {
   const ru = lang === 'ru';
+  if (cron.reboot) {
+    const details: Array<[string, string]> = [[ru ? 'Расписание' : 'Schedule', REBOOT_ALIAS]];
+    if (cron.command) details.push([ru ? 'Команда' : 'Command', cron.command]);
+    return { summary: ru ? 'При запуске системы (@reboot)' : 'At system startup (@reboot)', details };
+  }
   const allMinutes = isFull(cron.minutes, 0, 59);
   const allHours = isFull(cron.hours, 0, 23);
   const minuteStep = stepOf(cron.minutes, 0, 59);
@@ -182,12 +261,10 @@ export function describeCron(cron: ParsedCron, lang: 'en' | 'ru'): CronDescripti
     parts.push(ru ? `${cron.daysOfMonth.join(', ')} числа` : `on day ${cron.daysOfMonth.join(', ')} of the month`);
   }
   if (cron.months.length !== 12) {
-    const names = cron.months.map((month) => (ru ? MONTH_LABELS_RU[month - 1] : MONTH_LABELS[month - 1]));
-    parts.push(ru ? `в ${names.join(', ')}` : `in ${names.join(', ')}`);
+    parts.push(describeMonths(cron.months, ru, 'in'));
   }
   if (cron.dowRestricted) {
-    const names = cron.daysOfWeek.map((day) => (ru ? DOW_LABELS_RU[day] : DOW_LABELS[day]));
-    parts.push(ru ? `по ${names.join(', ')}` : `on ${names.join(', ')}`);
+    parts.push(describeDays(cron.daysOfWeek, ru));
   }
 
   const summary = parts.join(ru ? ', ' : ', ');
@@ -195,7 +272,7 @@ export function describeCron(cron: ParsedCron, lang: 'en' | 'ru'): CronDescripti
     [ru ? 'Минуты' : 'Minutes', cron.minutes.join(', ')],
     [ru ? 'Часы' : 'Hours', cron.hours.join(', ')],
     [ru ? 'День месяца' : 'Day of month', cron.daysOfMonth.join(', ')],
-    [ru ? 'Месяц' : 'Month', cron.months.map((month) => (ru ? MONTH_LABELS_RU[month - 1] : MONTH_LABELS[month - 1])).join(', ')],
+    [ru ? 'Месяц' : 'Month', describeMonths(cron.months, ru, 'list')],
     [ru ? 'День недели' : 'Day of week', cron.daysOfWeek.map((day) => (ru ? DOW_LABELS_RU[day] : DOW_LABELS[day])).join(', ')],
   ];
 
