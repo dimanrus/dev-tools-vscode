@@ -1210,7 +1210,50 @@ textarea.dt-input {
 
 .dt-range {
   flex: 1 1 auto;
-  accent-color: var(--dt-accent);
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+  background: linear-gradient(
+    90deg,
+    var(--dt-accent) 0 var(--dt-range-fill, 0%),
+    color-mix(in srgb, var(--dt-fg) 14%, transparent) var(--dt-range-fill, 0%) 100%
+  );
+}
+
+.dt-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--dt-accent);
+  border: 2px solid var(--dt-panel-bg);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: transform 0.12s ease;
+}
+
+.dt-range::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+
+.dt-range:focus-visible {
+  box-shadow: 0 0 0 1px var(--dt-focus);
+}
+
+.dt-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--dt-accent);
+  border: 2px solid var(--dt-panel-bg);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.dt-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--dt-fg) 14%, transparent);
 }
 
 .dt-range-value {

@@ -560,14 +560,14 @@ export const CATALOG: CatalogEntry[] = [
   {
     "id": "graphic-image-converter",
     "group": "graphic",
-    "keywords": "image convert png jpeg webp resize compress",
+    "keywords": "image convert png jpg jpeg webp bmp ico icon favicon resize compress",
     "name": {
       "en": "Image Converter",
       "ru": "Конвертер изображений"
     },
     "desc": {
-      "en": "Convert images between PNG, JPEG and WebP with resizing and quality control.",
-      "ru": "Конвертация изображений между PNG, JPEG и WebP с изменением размера и качеством."
+      "en": "Convert images between PNG, JPG, WebP, BMP and ICO with resizing and quality control.",
+      "ru": "Конвертация изображений между PNG, JPG, WebP, BMP и ICO с изменением размера и качеством."
     }
   },
   {

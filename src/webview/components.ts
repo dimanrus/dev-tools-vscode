@@ -183,10 +183,17 @@ export function checkbox(label: string, checked: boolean, onchange: (checked: bo
 export function rangeField(label: string, min: number, max: number, value: number, oninput: (value: number) => void, step = 1): HTMLElement {
   const output = h('span', { class: 'dt-range-value' }, String(value));
   const input = h('input', { type: 'range', class: 'dt-range', min, max, step, value });
+  const paint = (): void => {
+    const span = max - min;
+    const ratio = span > 0 ? (Number(input.value) - min) / span : 0;
+    input.style.setProperty('--dt-range-fill', `${Math.min(100, Math.max(0, ratio * 100))}%`);
+  };
   input.addEventListener('input', () => {
     output.textContent = input.value;
+    paint();
     oninput(Number(input.value));
   });
+  paint();
   return h('div', { class: 'dt-field' }, h('span', { class: 'dt-label' }, label), h('div', { class: 'dt-range-row' }, input, output));
 }
 

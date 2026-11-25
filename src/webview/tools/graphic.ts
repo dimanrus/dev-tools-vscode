@@ -11,7 +11,7 @@ import {
   fileDrop,
   note,
   pane,
-  knobField as rangeField,
+  rangeField,
   readDataUrl,
   select,
   setError,
@@ -416,6 +416,119 @@ function colorBlindTool(): ReturnType<typeof defineTool> {
   });
 }
 
+type ImageFormat = 'png' | 'jpeg' | 'webp' | 'bmp' | 'ico';
+
+interface ImageFormatInfo {
+  mime: string;
+  label: string;
+  ext: string;
+  lossy: boolean;
+}
+
+const IMAGE_FORMATS: Record<ImageFormat, ImageFormatInfo> = {
+  png: { mime: 'image/png', label: 'PNG', ext: 'png', lossy: false },
+  jpeg: { mime: 'image/jpeg', label: 'JPG (JPEG)', ext: 'jpg', lossy: true },
+  webp: { mime: 'image/webp', label: 'WebP', ext: 'webp', lossy: true },
+  bmp: { mime: 'image/bmp', label: 'BMP', ext: 'bmp', lossy: false },
+  ico: { mime: 'image/x-icon', label: 'ICO (icon)', ext: 'ico', lossy: false },
+};
+
+const ICO_SIZES = [16, 32, 48, 64, 128, 256];
+
+function drawToCanvas(image: HTMLImageElement, width: number, height: number, background?: string): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(width));
+  canvas.height = Math.max(1, Math.round(height));
+  const context = canvas.getContext('2d');
+  if (context) {
+    if (background) {
+      context.fillStyle = background;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  }
+  return canvas;
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob | null> {
+  return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), type, quality));
+}
+
+/** Minimal 24-bit BMP writer (bottom-up rows, transparent pixels composited over white). */
+function encodeBmp(width: number, height: number, rgba: Uint8ClampedArray): Blob {
+  const rowSize = Math.ceil((width * 3) / 4) * 4;
+  const pixelSize = rowSize * height;
+  const buffer = new ArrayBuffer(54 + pixelSize);
+  const view = new DataView(buffer);
+  const bytes = new Uint8Array(buffer);
+  view.setUint8(0, 0x42);
+  view.setUint8(1, 0x4d);
+  view.setUint32(2, buffer.byteLength, true);
+  view.setUint32(10, 54, true);
+  view.setUint32(14, 40, true);
+  view.setInt32(18, width, true);
+  view.setInt32(22, height, true);
+  view.setUint16(26, 1, true);
+  view.setUint16(28, 24, true);
+  view.setUint32(34, pixelSize, true);
+  view.setInt32(38, 2835, true);
+  view.setInt32(42, 2835, true);
+  for (let y = 0; y < height; y++) {
+    const sourceRow = (height - 1 - y) * width * 4;
+    let target = 54 + y * rowSize;
+    for (let x = 0; x < width; x++) {
+      const index = sourceRow + x * 4;
+      const alpha = rgba[index + 3] / 255;
+      bytes[target++] = Math.round(rgba[index + 2] * alpha + 255 * (1 - alpha));
+      bytes[target++] = Math.round(rgba[index + 1] * alpha + 255 * (1 - alpha));
+      bytes[target++] = Math.round(rgba[index] * alpha + 255 * (1 - alpha));
+    }
+  }
+  return new Blob([buffer], { type: 'image/bmp' });
+}
+
+/** Multi-size ICO container with PNG-compressed entries (16…256 px). */
+async function encodeIco(image: HTMLImageElement): Promise<Blob | null> {
+  const entries: Array<{ size: number; png: Uint8Array }> = [];
+  for (const size of ICO_SIZES) {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext('2d');
+    if (!context) continue;
+    const scale = Math.min(size / image.naturalWidth, size / image.naturalHeight);
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    context.drawImage(image, Math.round((size - width) / 2), Math.round((size - height) / 2), width, height);
+    const blob = await canvasToBlob(canvas, 'image/png');
+    if (blob) entries.push({ size, png: new Uint8Array(await blob.arrayBuffer()) });
+  }
+  if (!entries.length) return null;
+  const headerSize = 6 + entries.length * 16;
+  const buffer = new ArrayBuffer(entries.reduce((sum, entry) => sum + entry.png.length, headerSize));
+  const view = new DataView(buffer);
+  const bytes = new Uint8Array(buffer);
+  view.setUint16(0, 0, true);
+  view.setUint16(2, 1, true);
+  view.setUint16(4, entries.length, true);
+  let directory = 6;
+  let dataOffset = headerSize;
+  for (const entry of entries) {
+    view.setUint8(directory, entry.size >= 256 ? 0 : entry.size);
+    view.setUint8(directory + 1, entry.size >= 256 ? 0 : entry.size);
+    view.setUint8(directory + 2, 0);
+    view.setUint8(directory + 3, 0);
+    view.setUint16(directory + 4, 1, true);
+    view.setUint16(directory + 6, 32, true);
+    view.setUint32(directory + 8, entry.png.length, true);
+    view.setUint32(directory + 12, dataOffset, true);
+    bytes.set(entry.png, dataOffset);
+    directory += 16;
+    dataOffset += entry.png.length;
+  }
+  return new Blob([buffer], { type: 'image/x-icon' });
+}
+
 function imageConverterTool(): ReturnType<typeof defineTool> {
   return defineTool({
     id: 'graphic-image-converter',
@@ -423,66 +536,159 @@ function imageConverterTool(): ReturnType<typeof defineTool> {
     icon: '<path d="M4 5m0 1a1 1 0 0 1 1 -1h14a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-14a1 1 0 0 1 -1 -1z"/><path d="M4 15l4 -4l4 4l3 -3l5 5"/><path d="M14 8l0 .01"/>',
     name: { en: 'Image Converter', ru: 'Конвертер изображений' },
     desc: {
-      en: 'Convert images between PNG, JPEG and WebP with resizing and quality control.',
-      ru: 'Конвертация изображений между PNG, JPEG и WebP с изменением размера и качеством.',
+      en: 'Convert images between PNG, JPG, WebP, BMP and ICO with resizing and quality control.',
+      ru: 'Конвертация изображений между PNG, JPG, WebP, BMP и ICO с изменением размера и качеством.',
     },
-    keywords: 'image convert png jpeg webp resize compress',
+    keywords: 'image convert png jpg jpeg webp bmp ico icon favicon resize compress',
     mount(root, ctx) {
       let image: HTMLImageElement | null = null;
-      let format: 'image/png' | 'image/jpeg' | 'image/webp' = 'image/webp';
+      let format: ImageFormat = 'webp';
       let quality = 0.85;
-      let maxWidth = 0;
+      let outWidth = 0;
+      let outHeight = 0;
+      let keepAspect = true;
       let resultBlob: Blob | null = null;
-      const canvas = h('canvas', { class: 'dt-hidden' });
+      let previewUrl: string | null = null;
+      let token = 0;
       const preview = h('img', { class: 'dt-preview-img', alt: 'preview' });
       const info = h('div');
       const error = errorSlot();
 
-      const convert = () => {
+      const convert = async (): Promise<void> => {
+        const current = ++token;
         if (!image) return;
-        const scale = maxWidth > 0 && image.naturalWidth > maxWidth ? maxWidth / image.naturalWidth : 1;
-        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-        const context = canvas.getContext('2d');
-        if (!context) return;
-        if (format === 'image/jpeg') {
-          context.fillStyle = '#ffffff';
-          context.fillRect(0, 0, canvas.width, canvas.height);
+        const width = Math.max(1, Math.round(outWidth || image.naturalWidth));
+        const height = Math.max(1, Math.round(outHeight || image.naturalHeight));
+        let blob: Blob | null = null;
+        let output = `${width} × ${height}`;
+        if (format === 'ico') {
+          blob = await encodeIco(image);
+          output = `${ICO_SIZES.join(' · ')} px`;
+        } else if (format === 'bmp') {
+          const canvas = drawToCanvas(image, width, height, '#ffffff');
+          const context = canvas.getContext('2d');
+          if (!context) return;
+          blob = encodeBmp(canvas.width, canvas.height, context.getImageData(0, 0, canvas.width, canvas.height).data);
+        } else {
+          const canvas = drawToCanvas(image, width, height, format === 'jpeg' ? '#ffffff' : undefined);
+          blob = await canvasToBlob(canvas, IMAGE_FORMATS[format].mime, IMAGE_FORMATS[format].lossy ? quality : undefined);
         }
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) return;
-            resultBlob = blob;
-            preview.src = URL.createObjectURL(blob);
-            info.replaceChildren(
-              stats([
-                [ctx.pick('Source', 'Исходный размер'), `${image?.naturalWidth} × ${image?.naturalHeight}`],
-                [ctx.pick('Output', 'Результат'), `${canvas.width} × ${canvas.height}`],
-                [ctx.pick('Format', 'Формат'), blob.type.replace('image/', '').toUpperCase()],
-                [ctx.pick('Size', 'Размер файла'), `${(blob.size / 1024).toFixed(1)} KB`],
-              ]),
-            );
-            setError(error, null);
-          },
-          format,
-          format === 'image/png' ? undefined : quality,
+        if (current !== token) return;
+        if (!blob) {
+          setError(error, ctx.pick('Cannot convert this image.', 'Не удалось конвертировать изображение.'));
+          return;
+        }
+        resultBlob = blob;
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        previewUrl = URL.createObjectURL(blob);
+        preview.src = previewUrl;
+        info.replaceChildren(
+          stats([
+            [ctx.pick('Source', 'Исходный размер'), `${image.naturalWidth} × ${image.naturalHeight}`],
+            [ctx.pick('Output', 'Результат'), output],
+            [ctx.pick('Format', 'Формат'), IMAGE_FORMATS[format].label],
+            [ctx.pick('Size', 'Размер файла'), `${(blob.size / 1024).toFixed(1)} KB`],
+          ]),
         );
+        setError(error, null);
       };
 
       const upload = fileDrop({
-        accept: 'image/*',
+        accept: 'image/*,.ico',
+        hint: ctx.pick('Drop a PNG, JPG, WebP, BMP or ICO file', 'Перетащите PNG, JPG, WebP, BMP или ICO'),
         onFiles: async (files) => {
           const dataUrl = await readDataUrl(files[0]);
           const loaded = new Image();
           loaded.onload = () => {
             image = loaded;
-            convert();
+            outWidth = loaded.naturalWidth;
+            outHeight = loaded.naturalHeight;
+            const limit = Math.max(2048, loaded.naturalWidth, loaded.naturalHeight);
+            widthSlider.set(outWidth, limit);
+            heightSlider.set(outHeight, limit);
+            syncControls();
+            void convert();
           };
           loaded.onerror = () => setError(error, ctx.pick('Cannot read image.', 'Не удалось прочитать изображение.'));
           loaded.src = dataUrl;
         },
       });
+
+      const qualityField = rangeField(ctx.pick('Quality', 'Качество'), 10, 100, 85, (value) => {
+        quality = value / 100;
+        void convert();
+      });
+
+      /** Linear slider whose bounds are updated when an image is loaded. */
+      const makeSlider = (
+        label: string,
+        initial: number,
+        oninput: (value: number) => void,
+      ): { element: HTMLElement; input: HTMLInputElement; set: (value: number, max?: number) => void } => {
+        const output = h('span', { class: 'dt-range-value' }, String(initial));
+        const input = h('input', { type: 'range', class: 'dt-range', min: 1, max: 4096, step: 1, value: initial });
+        const paint = (): void => {
+          const ratio = Number(input.value) / Number(input.max || 1);
+          input.style.setProperty('--dt-range-fill', `${Math.min(100, Math.max(0, ratio * 100))}%`);
+        };
+        input.addEventListener('input', () => {
+          output.textContent = input.value;
+          paint();
+          oninput(Number(input.value));
+        });
+        const set = (value: number, max?: number): void => {
+          if (max) input.max = String(max);
+          input.value = String(value);
+          output.textContent = String(value);
+          paint();
+        };
+        paint();
+        const element = h('div', { class: 'dt-field' }, h('span', { class: 'dt-label' }, label), h('div', { class: 'dt-range-row' }, input, output));
+        return { element, input, set };
+      };
+
+      const widthSlider = makeSlider(ctx.pick('Width, px', 'Ширина, px'), 256, (value) => {
+        outWidth = value;
+        if (keepAspect && image) {
+          outHeight = Math.max(1, Math.round((value * image.naturalHeight) / image.naturalWidth));
+          heightSlider.set(outHeight);
+        }
+        void convert();
+      });
+      const heightSlider = makeSlider(ctx.pick('Height, px', 'Высота, px'), 256, (value) => {
+        outHeight = value;
+        if (keepAspect && image) {
+          outWidth = Math.max(1, Math.round((value * image.naturalWidth) / image.naturalHeight));
+          widthSlider.set(outWidth);
+        }
+        void convert();
+      });
+      const aspectToggle = checkbox(ctx.pick('Keep aspect ratio', 'Сохранять пропорции'), true, (value) => {
+        keepAspect = value;
+      });
+      const originalButton = btn(
+        ctx.pick('Original size', 'Исходный размер'),
+        () => {
+          if (!image) return;
+          outWidth = image.naturalWidth;
+          outHeight = image.naturalHeight;
+          widthSlider.set(outWidth);
+          heightSlider.set(outHeight);
+          void convert();
+        },
+        { variant: 'ghost' },
+      );
+      const formatHint = h('div', { class: 'dt-hint' }, ctx.pick('ICO gets 16, 32, 48, 64, 128 and 256 px entries.', 'В ICO добавляются размеры 16, 32, 48, 64, 128 и 256 px.'));
+
+      const syncControls = (): void => {
+        qualityField.hidden = !IMAGE_FORMATS[format].lossy;
+        const ico = format === 'ico';
+        widthSlider.element.hidden = ico || !image;
+        heightSlider.element.hidden = ico || !image;
+        aspectToggle.hidden = ico || !image;
+        originalButton.hidden = ico || !image;
+        formatHint.hidden = !ico;
+      };
 
       root.append(
         h(
@@ -490,38 +696,28 @@ function imageConverterTool(): ReturnType<typeof defineTool> {
           { class: 'dt-stack' },
           upload,
           error,
-          h(
-            'div',
-            { class: 'dt-inline-form' },
-            field(
-              ctx.pick('Format', 'Формат'),
-              select(
-                [
-                  { value: 'image/webp', label: 'WebP' },
-                  { value: 'image/png', label: 'PNG' },
-                  { value: 'image/jpeg', label: 'JPEG' },
-                ],
-                format,
-                (value) => {
-                  format = value as typeof format;
-                  convert();
-                },
-              ),
+          field(
+            ctx.pick('Format', 'Формат'),
+            select(
+              (Object.keys(IMAGE_FORMATS) as ImageFormat[]).map((key) => ({ value: key, label: IMAGE_FORMATS[key].label })),
+              format,
+              (value) => {
+                format = value as ImageFormat;
+                syncControls();
+                void convert();
+              },
             ),
-            rangeField(ctx.pick('Max width (0 = original)', 'Макс. ширина (0 = исходная)'), 0, 2000, 0, (value) => {
-              maxWidth = value;
-              convert();
-            }, 50),
           ),
-          (format as string) === 'image/png'
-            ? null
-            : rangeField(ctx.pick('Quality', 'Качество'), 10, 100, 85, (value) => {
-                quality = value / 100;
-                convert();
-              }),
-          pane(ctx.pick('Result', 'Результат'), h('div', { class: 'dt-stack' }, preview, info, toolbar(downloadBtn(() => resultBlob ?? new Blob(), () => `image.${format.split('/')[1]}`)))),
+          h('div', { class: 'dt-inline-form' }, qualityField, widthSlider.element, heightSlider.element),
+          formatHint,
+          pane(
+            ctx.pick('Result', 'Результат'),
+            h('div', { class: 'dt-stack' }, preview, info, toolbar(downloadBtn(() => resultBlob ?? new Blob(), () => `image.${IMAGE_FORMATS[format].ext}`))),
+            [aspectToggle, originalButton],
+          ),
         ),
       );
+      syncControls();
     },
   });
 }
