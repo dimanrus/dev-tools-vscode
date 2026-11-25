@@ -1,4 +1,5 @@
 /** Webview entry point: shell, navigation, search and tool mounting. */
+import { normalizePaneCollapse } from './components.ts';
 import { clear, h, svgIcon } from './dom.ts';
 import { getLang, onLangChange, pick, setLang, t, type Lang } from './i18n.ts';
 import { tools, groupOrder } from './tools/index.ts';
@@ -384,6 +385,7 @@ function openLicenses(): void {
 
 function renderMain(): void {
   syncNavActive();
+  main.classList.remove('dt-main-fill');
   if (view === 'home') {
     renderHome();
     return;
@@ -418,6 +420,7 @@ function revealActiveNavItem(): void {
 
 function renderTool(): void {
   clear(main);
+  main.classList.toggle('dt-main-fill', currentTool.fill === true);
   const header = h(
     'header',
     { class: 'dt-tool-head' },
@@ -442,6 +445,7 @@ function renderTool(): void {
       ),
     );
   }
+  normalizePaneCollapse(body);
   main.scrollTop = 0;
 }
 

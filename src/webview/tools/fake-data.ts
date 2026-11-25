@@ -146,6 +146,7 @@ function fakeDataTool(): ReturnType<typeof defineTool> {
       ru: 'Генерация реалистичных ФИО, телефонов, адресов, email и компаний с экспортом в CSV или JSON.',
     },
     keywords: 'fake data test data names фio email phone address csv json mock seed generator',
+    fill: true,
     mount(root, ctx) {
       let locale: Locale = 'ru';
       let rows = 20;

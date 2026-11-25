@@ -370,6 +370,7 @@ function jsonYamlTool(): ReturnType<typeof defineTool> {
       ru: 'Конвертация JSON в YAML и обратно с проверкой ошибок.',
     },
     keywords: 'json yaml yml convert',
+    fill: true,
     mount(root, ctx) {
       const jsonArea = area({ rows: 16, value: '{\n  "name": "dev-tools",\n  "version": "1.0.0",\n  "tools": ["json", "yaml", "jwt"]\n}' });
       const yamlArea = area({ rows: 16 });

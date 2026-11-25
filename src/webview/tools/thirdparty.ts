@@ -279,6 +279,7 @@ function jsonSchemaTool(): ReturnType<typeof defineTool> {
       ru: 'Построение JSON Schema (draft 2020-12) по примеру JSON.',
     },
     keywords: 'json schema infer generate validation',
+    fill: true,
     mount(root, ctx) {
       const input = area({
         rows: 14,
@@ -446,6 +447,7 @@ function randomizerTool(): ReturnType<typeof defineTool> {
       ru: 'Случайные числа, кубики, монетка, перемешивание и розыгрыши.',
     },
     keywords: 'random number dice coin shuffle pick lottery',
+    fill: true,
     mount(root, ctx) {
       let mode: 'number' | 'dice' | 'coin' | 'shuffle' | 'pick' = 'number';
       let min = 1;
@@ -834,6 +836,7 @@ function xsdGeneratorTool(): ReturnType<typeof defineTool> {
       ru: 'Создание XSD-схемы по примеру XML с определением типов.',
     },
     keywords: 'xsd xml schema generate',
+    fill: true,
     mount(root, ctx) {
       const input = area({
         rows: 14,

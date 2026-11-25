@@ -51,6 +51,7 @@ function hashTool(): ReturnType<typeof defineTool> {
       ru: 'Вычисление MD5, SHA-1/2 и CRC-32, включая HMAC-подписи.',
     },
     keywords: 'hash md5 sha1 sha256 sha512 crc32 hmac checksum',
+    fill: true,
     mount(root, ctx) {
       const input = area({ rows: 10, value: 'The quick brown fox jumps over the lazy dog' });
       const key = textInput({ placeholder: ctx.pick('Optional HMAC key', 'Необязательный ключ HMAC') });
@@ -146,6 +147,7 @@ function loremTool(): ReturnType<typeof defineTool> {
       ru: 'Генерация текста-заполнителя: абзацы, предложения или слова, текст или HTML.',
     },
     keywords: 'lorem ipsum placeholder dummy text filler',
+    fill: true,
     mount(root, ctx) {
       let paragraphs = 3;
       let sentences = 4;
@@ -228,6 +230,7 @@ function passwordTool(): ReturnType<typeof defineTool> {
       ru: 'Создание надёжных паролей с настраиваемым набором символов.',
     },
     keywords: 'password generator random secure entropy',
+    fill: true,
     mount(root, ctx) {
       let length = 20;
       let count = 5;
@@ -353,6 +356,7 @@ function uuidTool(): ReturnType<typeof defineTool> {
       ru: 'Массовая генерация UUID v4, упорядоченных v7 и nil.',
     },
     keywords: 'uuid guid v4 v7 random identifier',
+    fill: true,
     mount(root, ctx) {
       let version: 'v4' | 'v7' | 'nil' = 'v4';
       let count = 10;
@@ -459,6 +463,7 @@ function ulidTool(): ReturnType<typeof defineTool> {
       ru: 'Генерация сортируемых ULID и разбор встроенной метки времени.',
     },
     keywords: 'ulid identifier sortable timestamp',
+    fill: true,
     mount(root, ctx) {
       let count = 10;
       const output = area({ readOnly: true, rows: 14 });
@@ -526,6 +531,7 @@ function rsaTool(): ReturnType<typeof defineTool> {
       ru: 'Создание пар RSA-ключей в формате PEM для разработки и тестов.',
     },
     keywords: 'rsa key pair pem pkcs8 spki certificate cryptography',
+    fill: true,
     mount(root, ctx) {
       let bits = 2048;
       const privateArea = area({ readOnly: true, rows: 12 });
@@ -606,6 +612,7 @@ function semverTool(): ReturnType<typeof defineTool> {
       ru: 'Сравнение версий, проверка диапазонов и следующие номера релизов.',
     },
     keywords: 'semver version compare range bump next release',
+    fill: true,
     mount(root, ctx) {
       const left = textInput({ value: '1.2.3', class: 'dt-mono' });
       const right = textInput({ value: '2.0.0-beta.1', class: 'dt-mono' });

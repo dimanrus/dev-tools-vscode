@@ -39,6 +39,8 @@ export interface ToolDef {
   name: { en: string; ru: string };
   desc: { en: string; ru: string };
   keywords?: string;
+  /** Stretch the content to the panel height: text areas grow, info rows stick to the bottom. */
+  fill?: boolean;
   mount: (root: HTMLElement, ctx: ToolContext) => void;
 }
 

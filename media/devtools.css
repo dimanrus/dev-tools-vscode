@@ -945,6 +945,7 @@ body {
 
 .dt-pane-collapse > .dt-pane-body {
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -956,13 +957,96 @@ body {
   justify-content: flex-end;
 }
 
-.dt-pane-body {
+.dt-pane-content {
   padding: 10px;
   min-width: 0;
 }
 
-.dt-pane-body:empty {
+.dt-pane-body:empty,
+.dt-pane-body:has(> .dt-pane-content:empty) {
   display: none;
+}
+
+/* ---------- fill layout (tools whose content grows to the panel height) ---------- */
+
+.dt-main.dt-main-fill {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 20px;
+}
+
+.dt-main.dt-main-fill .dt-tool-head {
+  flex: 0 0 auto;
+}
+
+.dt-main.dt-main-fill .dt-tool-body {
+  flex: 1 0 auto;
+  min-height: 0;
+}
+
+.dt-main.dt-main-fill .dt-tool-body > .dt-stack {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Toolbars, errors, notes and stats keep their natural height below the growing editors. */
+.dt-main.dt-main-fill .dt-tool-body > .dt-stack > * {
+  flex: 0 0 auto;
+}
+
+.dt-main.dt-main-fill .dt-stack > .dt-split:has(.dt-area),
+.dt-main.dt-main-fill .dt-stack > .dt-pane:has(.dt-area):not(.is-collapsed) {
+  flex: 1 1 auto;
+  min-height: 240px;
+}
+
+.dt-main.dt-main-fill .dt-split:has(.dt-area) {
+  align-items: stretch;
+}
+
+.dt-main.dt-main-fill .dt-col {
+  min-height: 0;
+}
+
+.dt-main.dt-main-fill .dt-col > .dt-stack:has(.dt-area),
+.dt-main.dt-main-fill .dt-col > .dt-pane:has(.dt-area):not(.is-collapsed) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.dt-main.dt-main-fill .dt-pane:has(.dt-area) {
+  min-height: 0;
+}
+
+.dt-main.dt-main-fill .dt-pane:has(.dt-area) > .dt-pane-head {
+  flex: 0 0 auto;
+}
+
+.dt-main.dt-main-fill .dt-pane:has(.dt-area):not(.is-collapsed) > .dt-pane-collapse {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.dt-main.dt-main-fill .dt-pane-collapse > .dt-pane-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.dt-main.dt-main-fill .dt-pane-content:has(.dt-area) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dt-main.dt-main-fill .dt-pane-content:has(.dt-area) > .dt-stack {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.dt-main.dt-main-fill .dt-pane-content .dt-area {
+  flex: 1 1 auto;
+  min-height: 64px;
 }
 
 /* ---------- forms ---------- */
@@ -1687,7 +1771,7 @@ textarea.dt-input {
   color: color-mix(in srgb, var(--dt-bad) 78%, var(--dt-fg));
 }
 
-.dt-diff-pane .dt-pane-body {
+.dt-diff-pane .dt-pane-content {
   padding: 0;
 }
 

@@ -57,6 +57,7 @@ function jsonFormatterTool(): ReturnType<typeof defineTool> {
       ru: 'Форматирование, минификация, сортировка и проверка JSON с указанием позиции ошибки.',
     },
     keywords: 'json format beautify minify validate sort',
+    fill: true,
     mount(root, ctx) {
       const input = area({ rows: 16, value: '{"name":"dev-tools","versions":[1,2],"meta":{"stable":true,"tags":["json","yaml"]}}' });
       const output = area({ readOnly: true, rows: 16 });
@@ -327,6 +328,7 @@ function sqlFormatterTool(): ReturnType<typeof defineTool> {
       ru: 'Форматирование SQL-запросов с учётом структуры и отступов.',
     },
     keywords: 'sql format prettify query database',
+    fill: true,
     mount(root, ctx) {
       const input = area({ rows: 16, value: 'select u.id, u.name, count(o.id) as orders from users u left join orders o on o.user_id = u.id where u.active = 1 and u.created_at > \'2024-01-01\' group by u.id, u.name order by orders desc limit 10;' });
       const output = area({ readOnly: true, rows: 16 });
@@ -418,6 +420,7 @@ function xmlFormatterTool(): ReturnType<typeof defineTool> {
       ru: 'Проверка и форматирование XML-документов со сводкой структуры.',
     },
     keywords: 'xml format pretty print validate',
+    fill: true,
     mount(root, ctx) {
       const input = area({ rows: 16, value: '<?xml version="1.0" encoding="UTF-8"?><catalog><book id="1"><title>Dev Tools</title><price>0</price></book><book id="2"><title>Regex</title></book></catalog>' });
       const output = area({ readOnly: true, rows: 16 });

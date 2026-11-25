@@ -224,7 +224,8 @@ export function pane(
       titleNode,
       actions.length ? h('div', { class: 'dt-pane-actions' }, ...actions) : null,
     ),
-    h('div', { class: 'dt-pane-collapse' }, h('div', { class: 'dt-pane-body' }, body)),
+    // The padding lives on an inner wrapper so a collapsed pane shrinks to a true 0 height.
+    h('div', { class: 'dt-pane-collapse' }, h('div', { class: 'dt-pane-body' }, h('div', { class: 'dt-pane-content' }, body))),
   );
   if (!collapsible) return element;
   titleNode.setAttribute('aria-expanded', String(!collapsed));
@@ -236,6 +237,29 @@ export function pane(
   });
   titleNode.title = collapsed ? t('action.expand') : t('action.collapse');
   return element;
+}
+
+function makePaneStatic(pane: HTMLElement): void {
+  const head = pane.querySelector<HTMLElement>(':scope > .dt-pane-head');
+  const button = head?.querySelector<HTMLElement>(':scope > .dt-pane-title-btn');
+  if (!head || !button) return;
+  const title = button.querySelector('.dt-pane-title')?.textContent ?? '';
+  pane.classList.remove('is-collapsed');
+  head.replaceChild(h('div', { class: 'dt-pane-title-static' }, h('span', { class: 'dt-pane-title' }, title)), button);
+}
+
+/**
+ * A page (or a tab) that shows one or two blocks gains nothing from collapsing them —
+ * the content should always be visible — so their headers become plain static titles.
+ * Call it after a tool/tab has rendered its DOM.
+ */
+export function normalizePaneCollapse(root: ParentNode): void {
+  const scopes: ParentNode[] = [root, ...root.querySelectorAll<HTMLElement>('.dt-tab-content')];
+  for (const scope of scopes) {
+    const panes = [...scope.querySelectorAll<HTMLElement>('.dt-pane')];
+    if (panes.length === 0 || panes.length > 2) continue;
+    for (const pane of panes) makePaneStatic(pane);
+  }
 }
 
 export interface KnobOptions {
@@ -658,6 +682,7 @@ export function tabs(items: TabItem[]): HTMLElement {
     const rendered = item.render();
     if (rendered instanceof Node) content.appendChild(rendered);
     else if (rendered !== null && rendered !== undefined && rendered !== false) content.appendChild(document.createTextNode(String(rendered)));
+    normalizePaneCollapse(content);
   };
   const header = h(
     'div',
