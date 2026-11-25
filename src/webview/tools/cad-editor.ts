@@ -23,7 +23,7 @@ import {
   segmented,
   select,
   setError,
-  split,
+  resizableSplit,
   textInput,
   toolbar,
 } from '../components.ts';
@@ -195,7 +195,7 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
       const measurements: Measurement[] = [];
 
       const error = errorSlot();
-      const stage = h('div', { class: 'dt-scene-stage', dataset: { tool: 'rect' } });
+      const stage = h('div', { class: 'dt-scene-stage dt-cad-stage', dataset: { tool: 'rect' } });
       const overlay = h('div', { class: 'dt-cad-overlay' });
       const liveLabel = h('span', { class: 'dt-cad-live' });
       stage.append(overlay);
@@ -1778,7 +1778,7 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
           'div',
           { class: 'dt-stack' },
           error,
-          split(
+          resizableSplit(
             h(
               'div',
               { class: 'dt-col' },
@@ -1821,6 +1821,12 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
                 ),
               ),
             ),
+            {
+              ratio: 0.74,
+              minSide: 292,
+              title: ctx.pick('Drag to resize the viewport', 'Потяните, чтобы изменить ширину сцены'),
+              onResize: () => resize(),
+            },
           ),
         ),
       );

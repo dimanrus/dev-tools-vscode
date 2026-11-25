@@ -3024,6 +3024,11 @@ textarea.dt-input {
   height: 100%;
 }
 
+/* The CAD viewport takes the extra room freed by the narrower panels. */
+.dt-cad-stage {
+  height: min(68vh, 640px);
+}
+
 /* Animation stage follows the project aspect ratio. */
 .dt-anim-3d {
   height: auto;
