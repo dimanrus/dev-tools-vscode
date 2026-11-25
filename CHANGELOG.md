@@ -8,8 +8,6 @@
 
 - **🎞️ FFmpeg Converter** (`media-ffmpeg-convert`) — transcode, remux, trim, resize and extract audio with the local `ffmpeg`: MP4 (H.264/H.265), WebM (VP9/Opus), MKV remux, animated GIF, MP3/WAV/FLAC, CRF/encoder presets, NVENC/QSV/VA-API/VideoToolbox hardware encoding, source probing, a copyable command preview, live progress with speed/size, cancellation and output reveal.
 - **📡 Stream Viewer** (`media-stream-viewer`) — probe and play RTSP (TCP/UDP/HTTP tunnel), RTMP(S), HLS, DASH, SRT, RTP, MPEG-TS over UDP/TCP, HTTP(S), FTP/SFTP, local files, concat lists and capture devices with `ffprobe`/`ffplay`; custom headers, User-Agent, Referer, optional low-latency flags (off by default), collapsible advanced settings, stream tables, PNG frame snapshots without a player window, ffplay logs and a ready-to-copy command. A reference table lists everything ffplay can open.
-- **⚙️ Settings:** `devTools.ffmpegPath`, `devTools.ffprobePath` and `devTools.ffplayPath` let you point the tools at custom binaries.
-- **📂 Explorer:** both tools appear in **Open in Dev Tools…**, and incoming files now keep their real filesystem path.
 - **🔑 New "Cryptography" group with 7 tools:**
   - **Symmetric Encryption** — AES-128/192/256 in ECB, CBC, CTR, CFB, OFB, GCM, CCM, OCB, SIV, GCM-SIV, KW/KWP and XTS, plus ChaCha20, ChaCha20-Poly1305, XChaCha20(-Poly1305), Camellia, ARIA and SM4, with key/IV/AAD fields, PKCS#7 padding, authentication tags, text/hex/base64/file input and `.bin` export.
   - **GOST Encryption** — Kuznyechik, Magma (GOST R 34.12-2015) and GOST 28147-89 (S-box selection) in ECB, CBC, CFB, CTR, CTR-ACPKM, OFB, MAC, OMAC-ACPKM, MGM and KExp15/KWP key wrap, powered by [@li0ard/gost](https://github.com/li0ard/gost).
