@@ -527,20 +527,9 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
 
       const documentsPane = pane(ctx.pick('Documents', 'Документы'), documentsHost, [], '', { defaultCollapsed: true });
 
-      const exportPane = pane(
-        ctx.pick('Export', 'Экспорт'),
-        h(
-          'div',
-          { class: 'dt-stack' },
-          toolbar(
-            btn(
-              ctx.pick('Download PDF', 'Скачать PDF'),
-              () => void downloadPdf(pages, 'document.pdf'),
-              { variant: 'primary' },
-            ),
-            btn(ctx.pick('Reset', 'Сбросить'), reset, { variant: 'ghost' }),
-          ),
-        ),
+      const exportActions = toolbar(
+        btn(ctx.pick('Download PDF', 'Скачать PDF'), () => void downloadPdf(pages, 'document.pdf'), { variant: 'primary' }),
+        btn(ctx.pick('Reset', 'Сбросить'), reset, { variant: 'ghost' }),
       );
 
       root.append(
@@ -551,7 +540,7 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
           upload,
           split(
             h('div', { class: 'dt-col' }, pagesPane),
-            h('div', { class: 'dt-col' }, documentsPane, operationsPane, splitPane, exportPane),
+            h('div', { class: 'dt-col' }, documentsPane, operationsPane, splitPane, exportActions),
             'dt-pdf-split',
           ),
         ),
