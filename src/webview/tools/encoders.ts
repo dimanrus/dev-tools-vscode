@@ -11,11 +11,13 @@ import {
   errorSlot,
   field,
   fileDrop,
+  normalizePaneCollapse,
   note,
   pane,
   readDataUrl,
   readText,
   select,
+  segmented,
   setError,
   split,
   stats,
@@ -240,25 +242,17 @@ function base64FileTool(): ReturnType<typeof defineTool> {
       const uploadPreview = h('div', { class: 'dt-b64-preview' });
       const uploadInfo = h('div');
       const base64Area = area({ readOnly: true, rows: 8, wrap: 'soft' });
-
-      const uploadTab = h(
-        'div',
-        { class: 'dt-stack' },
-        fileDrop({
-          hint: ctx.pick('Drop any file (image, archive, PDF, document…)', 'Перетащите любой файл (изображение, архив, PDF, документ…)'),
-          onFiles: async (files) => {
-            const file = files[0];
-            const dataUrl = await readDataUrl(file);
-            const decoded = decodeDataUrl(dataUrl);
-            const mime = file.type || decoded?.mime || 'application/octet-stream';
-            base64Area.value = dataUrl;
-            present(uploadPreview, uploadInfo, file.name, mime, decoded?.bytes ?? new Uint8Array(), dataUrl);
-          },
-        }),
-        uploadPreview,
-        uploadInfo,
-        pane('Base64', base64Area, [copyBtn(() => base64Area.value), downloadBtn(() => base64Area.value, 'file.base64.txt')]),
-      );
+      const uploadDrop = fileDrop({
+        hint: ctx.pick('Drop any file (image, archive, PDF, document…)', 'Перетащите любой файл (изображение, архив, PDF, документ…)'),
+        onFiles: async (files) => {
+          const file = files[0];
+          const dataUrl = await readDataUrl(file);
+          const decoded = decodeDataUrl(dataUrl);
+          const mime = file.type || decoded?.mime || 'application/octet-stream';
+          base64Area.value = dataUrl;
+          present(uploadPreview, uploadInfo, file.name, mime, decoded?.bytes ?? new Uint8Array(), dataUrl);
+        },
+      });
 
       const decodeInput = area({ rows: 8, placeholder: 'data:application/pdf;base64,… or raw base64', wrap: 'soft' });
       const decodePreview = h('div', { class: 'dt-b64-preview' });
@@ -293,10 +287,33 @@ function base64FileTool(): ReturnType<typeof defineTool> {
       };
       decodeInput.addEventListener('input', decode);
 
-      const decodeTab = h(
+      let mode: 'encode' | 'decode' = 'encode';
+      const switcher = (): HTMLElement =>
+        segmented(
+          [
+            { value: 'encode', label: ctx.pick('File → Base64', 'Файл → Base64') },
+            { value: 'decode', label: ctx.pick('Base64 → File', 'Base64 → Файл') },
+          ],
+          mode,
+          (value) => {
+            mode = value as typeof mode;
+            render();
+          },
+        );
+
+      const uploadView = h(
         'div',
         { class: 'dt-stack' },
-        pane('Base64 / data URL', decodeInput),
+        pane('Base64', base64Area, [switcher(), copyBtn(() => base64Area.value), downloadBtn(() => base64Area.value, 'file.base64.txt')]),
+        uploadPreview,
+        uploadInfo,
+        uploadDrop,
+      );
+
+      const decodeView = h(
+        'div',
+        { class: 'dt-stack' },
+        pane('Base64 / data URL', decodeInput, [switcher(), copyBtn(() => decodeInput.value)]),
         decodeError,
         decodePreview,
         decodeInfo,
@@ -310,14 +327,16 @@ function base64FileTool(): ReturnType<typeof defineTool> {
             },
             { variant: 'primary' },
           ),
-          copyBtn(() => decodeInput.value),
         ),
       );
 
-      root.append(tabs([
-        { id: 'upload', label: ctx.pick('File → Base64', 'Файл → Base64'), render: () => uploadTab },
-        { id: 'decode', label: ctx.pick('Base64 → File', 'Base64 → Файл'), render: () => decodeTab },
-      ]));
+      const host = h('div', { class: 'dt-stack' });
+      const render = (): void => {
+        host.replaceChildren(mode === 'encode' ? uploadView : decodeView);
+        normalizePaneCollapse(host);
+      };
+      render();
+      root.append(host);
     },
   });
 }
