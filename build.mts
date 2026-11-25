@@ -9,7 +9,7 @@
  *   node build.mts --watch       incremental watch build
  */
 import { context, build, type BuildOptions } from 'esbuild';
-import { copyFile, mkdir } from 'node:fs/promises';
+import { copyFile, cp, mkdir } from 'node:fs/promises';
 
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
@@ -47,6 +47,9 @@ await mkdir('dist', { recursive: true });
 await mkdir('media/vendor', { recursive: true });
 // LGPL-3.0: lamejs is shipped as a separate, unminified vendor script so it can be replaced.
 await copyFile('node_modules/@breezystack/lamejs/dist/lamejs.iife.js', 'media/vendor/lamejs.iife.js');
+// pdf.js runs its parser in a dedicated worker module and needs the standard font data.
+await copyFile('node_modules/pdfjs-dist/build/pdf.worker.min.mjs', 'media/vendor/pdf.worker.min.mjs');
+await cp('node_modules/pdfjs-dist/standard_fonts', 'media/vendor/standard_fonts', { recursive: true });
 
 if (watch) {
   const host = await context(hostOptions);

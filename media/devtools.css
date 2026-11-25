@@ -1053,6 +1053,50 @@ body {
   min-height: 64px;
 }
 
+/* Panes that should stretch even without a text area (marked with .dt-pane-fill). */
+.dt-main.dt-main-fill .dt-split:has(.dt-pane-fill) {
+  flex: 1 1 0;
+  min-height: 360px;
+  align-items: stretch;
+}
+
+.dt-main.dt-main-fill .dt-col > .dt-pane-fill,
+.dt-main.dt-main-fill .dt-stack > .dt-pane-fill {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Tools often wrap their own .dt-col inside the one created by split(). */
+.dt-main.dt-main-fill .dt-col > .dt-col {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.dt-main.dt-main-fill .dt-pane-fill > .dt-pane-collapse {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.dt-main.dt-main-fill .dt-pane-fill > .dt-pane-collapse > .dt-pane-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dt-main.dt-main-fill .dt-pane-fill > .dt-pane-collapse > .dt-pane-body > .dt-pane-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dt-main.dt-main-fill .dt-pane-fill .dt-stack,
+.dt-main.dt-main-fill .dt-pane-fill .dt-pdf-pages {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: start;
+}
+
 /* ---------- forms ---------- */
 
 .dt-field {
@@ -3001,13 +3045,29 @@ textarea.dt-input {
   gap: 8px;
 }
 
+/* Empty-state hint fills the whole grid instead of a single page-card column. */
+.dt-pdf-pages > .dt-note {
+  grid-column: 1 / -1;
+}
+
+/* The page list scrolls on its own so the tools column stays visible. */
+.dt-pdf-pages {
+  max-height: 100%;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+/* More room for the pages, a slimmer tools column. */
+.dt-split.dt-pdf-split {
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+}
+
 .dt-pdf-page {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  aspect-ratio: 3 / 4;
-  padding: 8px 6px;
+  gap: 4px;
+  padding: 6px;
   border: 1px solid var(--dt-border);
   border-radius: 6px;
   background: var(--dt-panel-bg);
@@ -3027,9 +3087,61 @@ textarea.dt-input {
   box-shadow: 0 0 0 1px var(--dt-accent);
 }
 
+.dt-pdf-thumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 4px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.dt-pdf-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #ffffff;
+}
+
+.dt-pdf-thumb img.is-loading {
+  opacity: 0;
+}
+
 .dt-pdf-page-number {
-  font-size: 13px;
-  font-weight: 700;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(10, 12, 18, 0.72);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.dt-pdf-page-zoom {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: rgba(10, 12, 18, 0.72);
+  color: #ffffff;
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.dt-pdf-page:hover .dt-pdf-page-zoom,
+.dt-pdf-page:focus-visible .dt-pdf-page-zoom {
+  opacity: 1;
 }
 
 .dt-pdf-page-source {
@@ -3049,10 +3161,80 @@ textarea.dt-input {
 
 .dt-pdf-page-rotation {
   position: absolute;
+  right: 4px;
   top: 4px;
-  right: 6px;
-  font-size: 13px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(10, 12, 18, 0.72);
   color: var(--dt-accent);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* Full-page preview overlay */
+
+.dt-pdf-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(6, 8, 14, 0.74);
+}
+
+.dt-pdf-preview-card {
+  display: flex;
+  flex-direction: column;
+  max-width: min(1120px, 94vw);
+  max-height: 92vh;
+  border: 1px solid var(--dt-border);
+  border-radius: 12px;
+  background: var(--dt-panel-bg);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.dt-pdf-preview-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 14px;
+  border-bottom: 1px solid var(--dt-border-soft);
+}
+
+.dt-pdf-preview-title {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--dt-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dt-pdf-preview-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.dt-pdf-preview-body {
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  overflow: auto;
+  background: var(--dt-code-bg);
+}
+
+.dt-pdf-preview-body canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  background: #ffffff;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
 }
 
 /* ---------- tree lists & CAD overlay ---------- */

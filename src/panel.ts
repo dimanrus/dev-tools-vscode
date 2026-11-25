@@ -98,6 +98,9 @@ export class DevToolsPanel {
     const webview = this.panel.webview;
     const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.js'));
     const vendorUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'vendor', 'lamejs.iife.js'));
+    const pdfWorkerUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.context.extensionUri, 'media', 'vendor', 'pdf.worker.min.mjs'),
+    );
     const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'devtools.css'));
     const iconUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'icon.png'));
     const template = await loadTemplate(this.context);
@@ -111,6 +114,7 @@ export class DevToolsPanel {
       .replaceAll('{{nonce}}', nonce)
       .replaceAll('{{scriptUri}}', scriptUri.toString())
       .replaceAll('{{vendorUri}}', vendorUri.toString())
+      .replaceAll('{{pdfWorkerUri}}', pdfWorkerUri.toString())
       .replaceAll('{{styleUri}}', styleUri.toString())
       .replaceAll('{{iconUri}}', iconUri.toString())
       .replaceAll('{{hostLang}}', resolveLanguage())

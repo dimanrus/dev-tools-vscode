@@ -1,5 +1,6 @@
 /** PDF toolkit: merge, delete, rotate, reorder, extract and split pages. */
 import { PDFDocument, degrees } from 'pdf-lib';
+import type { PDFDocumentProxy } from 'pdfjs-dist';
 import {
   btn,
   checkbox,
@@ -24,6 +25,7 @@ interface PdfSource {
   id: number;
   name: string;
   doc: PDFDocument;
+  bytes: Uint8Array;
   count: number;
 }
 
@@ -33,6 +35,10 @@ interface PageRef {
   index: number;
   rotation: number;
 }
+
+/** pdf.js touches DOM APIs at import time, so it is loaded only when a page is rendered. */
+let pdfjsPromise: Promise<typeof import('pdfjs-dist')> | null = null;
+const loadPdfjs = (): Promise<typeof import('pdfjs-dist')> => (pdfjsPromise ??= import('pdfjs-dist'));
 
 function pdfToolkitTool(): ReturnType<typeof defineTool> {
   return defineTool({
@@ -45,6 +51,7 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
       ru: 'Объединение PDF, удаление, поворот, перестановка и извлечение страниц, разделение на части и сохранение.',
     },
     keywords: 'pdf merge split delete pages rotate extract combine documents',
+    fill: true,
     mount(root, ctx) {
       let nextSourceId = 1;
       let nextPageId = 1;
@@ -53,6 +60,8 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
       let selected = new Set<number>();
       let splitSize = 10;
       let splitChunks: Array<{ label: string; pages: PageRef[] }> = [];
+      let anchorOrder: number | null = null;
+      let previewOverlay: HTMLElement | null = null;
 
       const error = errorSlot();
       const pagesHost = h('div', { class: 'dt-pdf-pages' });
@@ -65,6 +74,135 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
         if (selected.has(id)) selected.delete(id);
         else selected.add(id);
         renderPages();
+      };
+
+      const workerUri = document.documentElement.dataset.pdfWorkerUri ?? '';
+      const standardFontsUri = workerUri.replace(/pdf\.worker\.min\.mjs$/, 'standard_fonts/');
+
+      const thumbs = new Map<number, string>();
+      const thumbImages = new Map<number, HTMLImageElement>();
+      const pdfDocs = new Map<number, Promise<PDFDocumentProxy>>();
+      let thumbQueue: Promise<void> = Promise.resolve();
+      const thumbObserver = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            thumbObserver.unobserve(entry.target);
+            const page = pages.find((item) => item.id === Number((entry.target as HTMLElement).dataset.pageId));
+            if (page) queueThumb(page);
+          }
+        },
+        { rootMargin: '240px' },
+      );
+
+      const pdfDocFor = (source: PdfSource): Promise<PDFDocumentProxy> => {
+        let promise = pdfDocs.get(source.id);
+        if (!promise) {
+          promise = (async () => {
+            const pdfjs = await loadPdfjs();
+            if (workerUri) pdfjs.GlobalWorkerOptions.workerSrc = workerUri;
+            const task = pdfjs.getDocument({
+              // pdf.js transfers (detaches) the buffer, so always hand it a copy.
+              data: new Uint8Array(source.bytes),
+              isEvalSupported: false,
+              standardFontDataUrl: standardFontsUri || undefined,
+            });
+            return task.promise;
+          })();
+          pdfDocs.set(source.id, promise);
+        }
+        return promise;
+      };
+
+      /** Renders a page (with the user rotation applied) into a fresh canvas. */
+      const paintPage = async (page: PageRef, width: number): Promise<HTMLCanvasElement> => {
+        const pdf = await pdfDocFor(page.source);
+        const pdfPage = await pdf.getPage(page.index + 1);
+        const rotation = (pdfPage.rotate + page.rotation) % 360;
+        const base = pdfPage.getViewport({ scale: 1, rotation });
+        const viewport = pdfPage.getViewport({ scale: width / base.width, rotation });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.ceil(viewport.width));
+        canvas.height = Math.max(1, Math.ceil(viewport.height));
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('Canvas 2D is unavailable');
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        await pdfPage.render({ canvas, canvasContext: context, viewport }).promise;
+        return canvas;
+      };
+
+      const queueThumb = (page: PageRef): void => {
+        thumbQueue = thumbQueue.then(async () => {
+          if (thumbs.has(page.id) || !thumbImages.has(page.id)) return;
+          try {
+            const canvas = await paintPage(page, 112 * Math.min(2, window.devicePixelRatio || 1));
+            const url = canvas.toDataURL('image/jpeg', 0.82);
+            thumbs.set(page.id, url);
+            const image = thumbImages.get(page.id);
+            if (image) {
+              image.src = url;
+              image.classList.remove('is-loading');
+            }
+          } catch {
+            thumbImages.get(page.id)?.classList.remove('is-loading');
+          }
+        });
+      };
+
+      const closePreview = (): void => {
+        if (!previewOverlay) return;
+        previewOverlay.remove();
+        previewOverlay = null;
+        document.removeEventListener('keydown', onPreviewKey);
+      };
+
+      function onPreviewKey(event: KeyboardEvent): void {
+        if (event.key === 'Escape') closePreview();
+      }
+
+      const openPreview = async (page: PageRef, order: number): Promise<void> => {
+        closePreview();
+        const body = h('div', { class: 'dt-pdf-preview-body' }, note(ctx.pick('Rendering…', 'Отрисовка…')));
+        const overlay = h(
+          'div',
+          { class: 'dt-pdf-preview', role: 'dialog', 'aria-modal': 'true' },
+          h(
+            'div',
+            { class: 'dt-pdf-preview-card' },
+            h(
+              'div',
+              { class: 'dt-pdf-preview-head' },
+              h(
+                'span',
+                { class: 'dt-pdf-preview-title' },
+                `${page.source.name} · ${ctx.pick('page', 'стр.')} ${order + 1}`,
+              ),
+              h(
+                'div',
+                { class: 'dt-pdf-preview-actions' },
+                iconBtn('<path d="M6 6l12 12"/><path d="M18 6l-12 12"/>', ctx.pick('Close', 'Закрыть'), closePreview),
+              ),
+            ),
+            body,
+          ),
+        );
+        overlay.addEventListener('click', (event) => {
+          if (event.target === overlay) closePreview();
+        });
+        document.body.appendChild(overlay);
+        previewOverlay = overlay;
+        document.addEventListener('keydown', onPreviewKey);
+        try {
+          const pdf = await pdfDocFor(page.source);
+          const pdfPage = await pdf.getPage(page.index + 1);
+          const rotation = (pdfPage.rotate + page.rotation) % 360;
+          const base = pdfPage.getViewport({ scale: 1, rotation });
+          const width = Math.min(1100, window.innerWidth * 0.86, window.innerHeight * 0.72 * (base.width / base.height));
+          body.replaceChildren(await paintPage(page, width));
+        } catch {
+          body.replaceChildren(note(ctx.pick('Cannot render this page.', 'Не удалось отобразить страницу.'), 'error'));
+        }
       };
 
       const buildPdf = async (refs: PageRef[]): Promise<Uint8Array> => {
@@ -88,6 +226,7 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
 
       const renderPages = (): void => {
         pagesHost.replaceChildren();
+        thumbImages.clear();
         if (!pages.length) {
           pagesHost.appendChild(
             note(ctx.pick('Drop one or more PDF files to start.', 'Перетащите один или несколько PDF-файлов.'), 'info'),
@@ -98,18 +237,51 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
           return;
         }
         pages.forEach((page, order) => {
+          const cached = thumbs.get(page.id);
+          const image = h('img', { alt: '', class: cached ? '' : 'is-loading' });
           const card = h(
             'button',
-            { type: 'button', class: `dt-pdf-page ${selected.has(page.id) ? 'is-selected' : ''}` },
-            h('span', { class: 'dt-pdf-page-number' }, String(order + 1)),
+            {
+              type: 'button',
+              class: `dt-pdf-page ${selected.has(page.id) ? 'is-selected' : ''}`,
+              title: ctx.pick(
+                'Click to select, Shift+click to select a range, double-click to preview',
+                'Клик — выбрать, Shift+клик — выбрать диапазон, двойной клик — предпросмотр',
+              ),
+            },
+            h(
+              'span',
+              { class: 'dt-pdf-thumb' },
+              image,
+              h('span', { class: 'dt-pdf-page-number' }, String(order + 1)),
+              page.rotation ? h('span', { class: 'dt-pdf-page-rotation' }, '⟳') : null,
+              h('span', { class: 'dt-pdf-page-zoom', title: ctx.pick('Preview page', 'Открыть страницу') }, '⤢'),
+            ),
             h('span', { class: 'dt-pdf-page-source' }, page.source.name),
             h('span', { class: 'dt-pdf-page-meta' }, `p.${page.index + 1}${page.rotation ? ` · ${page.rotation}°` : ''}`),
-            page.rotation
-              ? h('span', { class: 'dt-pdf-page-rotation' }, '⟳')
-              : null,
           );
-          card.addEventListener('click', () => toggleSelection(page.id));
+          card.addEventListener('click', (event) => {
+            const target = event.target instanceof HTMLElement ? event.target : null;
+            if (target?.closest('.dt-pdf-page-zoom')) {
+              void openPreview(page, order);
+              return;
+            }
+            // Shift-click selects the whole range from the last clicked page.
+            if (event.shiftKey && anchorOrder !== null && anchorOrder !== order) {
+              const [from, to] = anchorOrder < order ? [anchorOrder, order] : [order, anchorOrder];
+              selected = new Set(pages.slice(from, to + 1).map((item) => item.id));
+              renderPages();
+              return;
+            }
+            anchorOrder = order;
+            toggleSelection(page.id);
+          });
+          card.addEventListener('dblclick', () => void openPreview(page, order));
+          card.dataset.pageId = String(page.id);
+          thumbImages.set(page.id, image);
+          if (cached) image.src = cached;
           pagesHost.appendChild(card);
+          if (!cached) thumbObserver.observe(card);
         });
         summary.replaceChildren(
           stats([
@@ -182,6 +354,7 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
               id: nextSourceId++,
               name: file.name,
               doc,
+              bytes: new Uint8Array(bytes),
               count: doc.getPageCount(),
             };
             sources.push(source);
@@ -212,6 +385,7 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
         }
         pages = pages.filter((page) => !selected.has(page.id));
         selected = new Set();
+        anchorOrder = null;
         setError(error, null);
         renderPages();
       };
@@ -222,7 +396,10 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
           return;
         }
         for (const page of pages) {
-          if (selected.has(page.id)) page.rotation = (page.rotation + delta + 360) % 360;
+          if (selected.has(page.id)) {
+            page.rotation = (page.rotation + delta + 360) % 360;
+            thumbs.delete(page.id);
+          }
         }
         setError(error, null);
         renderPages();
@@ -254,6 +431,7 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
 
       const selectAll = (value: boolean): void => {
         selected = value ? new Set(pages.map((page) => page.id)) : new Set();
+        anchorOrder = null;
         renderPages();
       };
 
@@ -267,9 +445,11 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
       };
 
       const reset = (): void => {
+        closePreview();
         sources = [];
         pages = [];
         selected = new Set();
+        anchorOrder = null;
         setError(error, null);
         renderPages();
       };
@@ -289,6 +469,8 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
             () => selectAll(false),
           ),
         ],
+        'dt-pane-fill',
+        { collapsible: false },
       );
 
       const operationsPane = pane(
@@ -343,7 +525,7 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
         ),
       );
 
-      const documentsPane = pane(ctx.pick('Documents', 'Документы'), documentsHost);
+      const documentsPane = pane(ctx.pick('Documents', 'Документы'), documentsHost, [], '', { defaultCollapsed: true });
 
       const exportPane = pane(
         ctx.pick('Export', 'Экспорт'),
@@ -370,6 +552,7 @@ function pdfToolkitTool(): ReturnType<typeof defineTool> {
           split(
             h('div', { class: 'dt-col' }, pagesPane),
             h('div', { class: 'dt-col' }, documentsPane, operationsPane, splitPane, exportPane),
+            'dt-pdf-split',
           ),
         ),
       );

@@ -26,6 +26,7 @@ inspecting, replacing or rebuilding these components.
 | [marked](https://github.com/markedjs/marked) | 18.2.1 | MIT | Markdown preview | [text](licenses/marked-18.2.1.txt) |
 | [pako](https://github.com/nodeca/pako) | 1.0.11 | (MIT AND Zlib) | transitive dependency | [text](licenses/pako-1.0.11.txt) |
 | [pdf-lib](https://github.com/Hopding/pdf-lib) | 1.17.1 | MIT | PDF merge, split and page editing | [text](licenses/pdf-lib-1.17.1.txt) |
+| [pdfjs-dist](https://github.com/mozilla/pdf.js) | 5.4.624 | Apache-2.0 | transitive dependency | [text](licenses/pdfjs-dist-5.4.624.txt) |
 | [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) | 2.0.4 | MIT | QR code generation | [text](licenses/qrcode-generator-2.0.4.txt) |
 | [semver](https://github.com/npm/node-semver) | 7.8.6 | ISC | Semantic version checks | [text](licenses/semver-7.8.6.txt) |
 | [sm-crypto](https://github.com/JuneAndGreen/sm-crypto) | 0.5.9 | MIT | SM2, SM3 and SM4 algorithms | [text](licenses/sm-crypto-0.5.9.txt) |
