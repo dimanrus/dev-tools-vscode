@@ -420,7 +420,6 @@ function revealActiveNavItem(): void {
 
 function renderTool(): void {
   clear(main);
-  main.classList.toggle('dt-main-fill', currentTool.fill === true);
   const header = h(
     'header',
     { class: 'dt-tool-head' },
@@ -446,7 +445,23 @@ function renderTool(): void {
     );
   }
   normalizePaneCollapse(body);
+  main.classList.toggle('dt-main-fill', shouldFillHeight(currentTool, body));
   main.scrollTop = 0;
+}
+
+/**
+ * Two side-by-side editors and nothing else are the same layout everywhere,
+ * so those tools stretch to the panel height without opting in per tool.
+ */
+function shouldFillHeight(tool: ToolDef, body: HTMLElement): boolean {
+  if (tool.fill !== undefined) return tool.fill;
+  const panes = [...body.querySelectorAll<HTMLElement>('.dt-pane')];
+  if (panes.length !== 2 || !body.querySelector('.dt-area')) return false;
+  // Resizable / custom editor splits manage their own sizing.
+  if (body.querySelector('.dt-split-resizable')) return false;
+  const container = (pane: HTMLElement): Element | null => pane.closest('.dt-split, .dt-md-panes');
+  const shared = container(panes[0]);
+  return Boolean(shared) && shared === container(panes[1]);
 }
 
 function renderAll(): void {

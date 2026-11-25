@@ -1,4 +1,4 @@
-/** Encoders / decoders: base64 (text & image), certificate, gzip, HTML, JWT, QR, URL. */
+/** Encoders / decoders: base64 (text & file), certificate, gzip, HTML, JWT, QR, URL. */
 import qrcode from 'qrcode-generator';
 import {
   area,
@@ -6,6 +6,7 @@ import {
   btn,
   checkbox,
   copyBtn,
+  downloadBlob,
   downloadBtn,
   errorSlot,
   field,
@@ -23,9 +24,19 @@ import {
   textInput,
   toolbar,
 } from '../components.ts';
-import { h } from '../dom.ts';
+import { h, svgIcon } from '../dom.ts';
 import { defineTool } from '../tool-types.ts';
-import { base64ToBytes, base64ToUtf8, bytesToBase64, decodeBase64, encodeBase64, fromBase64Url, toBase64Url, utf8ToBase64 } from '../lib/bytes.ts';
+import {
+  base64ToBytes,
+  base64ToUtf8,
+  bytesToBase64,
+  decodeBase64,
+  encodeBase64,
+  formatBytesAsText,
+  fromBase64Url,
+  toBase64Url,
+  utf8ToBase64,
+} from '../lib/bytes.ts';
 import { escapeText, unescapeText } from '../lib/escapers.ts';
 import { t } from '../i18n.ts';
 
@@ -41,8 +52,8 @@ function base64TextTool(): ReturnType<typeof defineTool> {
     },
     keywords: 'base64 encode decode text utf8',
     mount(root, ctx) {
-      const input = area({ rows: 12, value: 'Hello, Dev Tools! 👋' });
-      const output = area({ readOnly: true, rows: 12 });
+      const input = area({ rows: 12, value: 'Hello, Dev Tools! 👋', wrap: 'soft' });
+      const output = area({ readOnly: true, rows: 12, wrap: 'soft' });
       const error = errorSlot();
       let mode: 'encode' | 'decode' = 'encode';
       let urlSafe = false;
@@ -110,87 +121,175 @@ function base64TextTool(): ReturnType<typeof defineTool> {
   });
 }
 
-function base64ImageTool(): ReturnType<typeof defineTool> {
+const MIME_EXTENSIONS: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/bmp': 'bmp',
+  'image/avif': 'avif',
+  'image/svg+xml': 'svg',
+  'application/pdf': 'pdf',
+  'application/zip': 'zip',
+  'application/gzip': 'gz',
+  'application/x-7z-compressed': '7z',
+  'application/vnd.rar': 'rar',
+  'application/json': 'json',
+  'text/plain': 'txt',
+  'text/html': 'html',
+  'application/octet-stream': 'bin',
+};
+
+const FILE_ICON =
+  '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/>';
+
+/** Guesses the MIME type of raw bytes from their signature. */
+function sniffMime(bytes: Uint8Array): string {
+  const at = (index: number): number => bytes[index] ?? 0;
+  if (at(0) === 0x89 && at(1) === 0x50 && at(2) === 0x4e && at(3) === 0x47) return 'image/png';
+  if (at(0) === 0xff && at(1) === 0xd8 && at(2) === 0xff) return 'image/jpeg';
+  if (at(0) === 0x47 && at(1) === 0x49 && at(2) === 0x46 && at(3) === 0x38) return 'image/gif';
+  if (at(0) === 0x52 && at(1) === 0x49 && at(2) === 0x46 && at(3) === 0x46 && at(8) === 0x57 && at(9) === 0x45 && at(10) === 0x42 && at(11) === 0x50) return 'image/webp';
+  if (at(0) === 0x25 && at(1) === 0x50 && at(2) === 0x44 && at(3) === 0x46) return 'application/pdf';
+  if (at(0) === 0x50 && at(1) === 0x4b && (at(2) === 0x03 || at(2) === 0x05 || at(2) === 0x07)) return 'application/zip';
+  if (at(0) === 0x1f && at(1) === 0x8b) return 'application/gzip';
+  if (at(0) === 0x37 && at(1) === 0x7a && at(2) === 0xbc && at(3) === 0xaf) return 'application/x-7z-compressed';
+  if (at(0) === 0x52 && at(1) === 0x61 && at(2) === 0x72 && at(3) === 0x21) return 'application/vnd.rar';
+  return 'application/octet-stream';
+}
+
+function extensionFor(mime: string): string {
+  return MIME_EXTENSIONS[mime] ?? mime.split('/').pop()?.replace(/[^a-z0-9]/gi, '') ?? 'bin';
+}
+
+interface DecodedData {
+  mime: string;
+  bytes: Uint8Array;
+}
+
+/** Parses `data:<mime>[;base64],<payload>` (percent-encoded payloads are supported too). */
+function decodeDataUrl(value: string): DecodedData | null {
+  const raw = value.trim();
+  if (!raw.startsWith('data:')) return null;
+  const comma = raw.indexOf(',');
+  if (comma < 0) return null;
+  const header = raw.slice(5, comma);
+  const mime = header.split(';')[0].trim() || 'application/octet-stream';
+  const payload = raw.slice(comma + 1);
+  try {
+    if (!header.toLowerCase().includes('base64')) {
+      return { mime, bytes: new TextEncoder().encode(decodeURIComponent(payload)) };
+    }
+    return { mime, bytes: base64ToBytes(payload.replace(/\s+/g, '')) };
+  } catch {
+    return null;
+  }
+}
+
+function base64FileTool(): ReturnType<typeof defineTool> {
   return defineTool({
     id: 'encoders-base64-image',
     group: 'encoders',
-    icon: '<path d="M3 5m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z"/><path d="M3 16l5 -5l4 4l3 -3l6 6"/><path d="M14 8l0 .01"/>',
-    name: { en: 'Base64 Image', ru: 'Base64: изображение' },
+    icon: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/><path d="M9 13h6"/><path d="M9 17h4"/>',
+    name: { en: 'Base64 File', ru: 'Base64: файл' },
     desc: {
-      en: 'Convert images to Base64 data URLs and preview Base64 images.',
-      ru: 'Преобразование изображений в Base64 data URL и предпросмотр Base64-изображений.',
+      en: 'Convert any file (image, archive, PDF…) to a Base64 data URL and decode Base64 back into a file.',
+      ru: 'Преобразование файлов (изображение, архив, PDF…) в Base64 data URL и обратное декодирование в файл.',
     },
-    keywords: 'base64 image dataurl png jpeg preview',
+    keywords: 'base64 file dataurl image preview archive zip pdf gzip download',
     mount(root, ctx) {
-      const preview = h('img', { class: 'dt-preview-img', alt: 'preview' });
-      const base64Area = area({ readOnly: true, rows: 8 });
-      const info = h('div');
-      const status = h('div');
+      const fileCard = (name: string, mime: string, size: number): HTMLElement =>
+        h(
+          'div',
+          { class: 'dt-b64-file' },
+          h('span', { class: 'dt-b64-file-icon' }, svgIcon(FILE_ICON, 26)),
+          h(
+            'div',
+            { class: 'dt-b64-file-meta' },
+            h('div', { class: 'dt-b64-file-name' }, name),
+            h('div', { class: 'dt-b64-file-sub' }, `${mime} · ${formatBytesAsText(size)}`),
+          ),
+        );
 
-      const show = (dataUrl: string) => {
-        preview.src = dataUrl;
-        base64Area.value = dataUrl;
-        status.replaceChildren();
-        const image = new Image();
-        image.onload = () => {
-          info.replaceChildren(
-            stats([
-              [ctx.pick('Dimensions', 'Размеры'), `${image.naturalWidth} × ${image.naturalHeight}`],
-              [ctx.pick('Base64 length', 'Длина Base64'), dataUrl.length],
-              [ctx.pick('Approx. size', 'Примерный размер'), `${Math.round((dataUrl.length * 3) / 4 / 1024)} KB`],
-              ['MIME', dataUrl.slice(5, dataUrl.indexOf(';')) || '—'],
-            ]),
-          );
-        };
-        image.onerror = () => info.replaceChildren(note(ctx.pick('Cannot render this image.', 'Не удалось отобразить изображение.'), 'warn'));
-        image.src = dataUrl;
+      const rowList = (name: string | null, mime: string, size: number, base64Length: number, dims?: [number, number]): Array<[string, string]> => {
+        const rows: Array<[string, string]> = [];
+        if (name) rows.push([ctx.pick('File', 'Файл'), name]);
+        rows.push(['MIME', mime]);
+        rows.push([ctx.pick('Size', 'Размер'), formatBytesAsText(size)]);
+        if (dims) rows.push([ctx.pick('Dimensions', 'Размеры'), `${dims[0]} × ${dims[1]}`]);
+        rows.push([ctx.pick('Base64 length', 'Длина Base64'), String(base64Length)]);
+        return rows;
       };
+
+      /** Images get a real preview, everything else a file card with type and size. */
+      const present = (host: HTMLElement, infoHost: HTMLElement, name: string | null, mime: string, bytes: Uint8Array, dataUrl: string): void => {
+        host.replaceChildren();
+        infoHost.replaceChildren(stats(rowList(name, mime, bytes.length, dataUrl.length)));
+        const label = name ?? `file.${extensionFor(mime)}`;
+        if (!mime.startsWith('image/')) {
+          host.appendChild(fileCard(label, mime, bytes.length));
+          return;
+        }
+        const image = h('img', { class: 'dt-preview-img', alt: '' });
+        image.onload = () => infoHost.replaceChildren(stats(rowList(name, mime, bytes.length, dataUrl.length, [image.naturalWidth, image.naturalHeight])));
+        image.onerror = () => host.replaceChildren(fileCard(label, mime, bytes.length));
+        image.src = dataUrl;
+        host.appendChild(image);
+      };
+
+      const uploadPreview = h('div', { class: 'dt-b64-preview' });
+      const uploadInfo = h('div');
+      const base64Area = area({ readOnly: true, rows: 8, wrap: 'soft' });
 
       const uploadTab = h(
         'div',
         { class: 'dt-stack' },
         fileDrop({
-          accept: 'image/*',
+          hint: ctx.pick('Drop any file (image, archive, PDF, document…)', 'Перетащите любой файл (изображение, архив, PDF, документ…)'),
           onFiles: async (files) => {
-            const dataUrl = await readDataUrl(files[0]);
-            show(dataUrl);
+            const file = files[0];
+            const dataUrl = await readDataUrl(file);
+            const decoded = decodeDataUrl(dataUrl);
+            const mime = file.type || decoded?.mime || 'application/octet-stream';
+            base64Area.value = dataUrl;
+            present(uploadPreview, uploadInfo, file.name, mime, decoded?.bytes ?? new Uint8Array(), dataUrl);
           },
         }),
-        preview,
-        info,
-        pane('Base64', base64Area, [copyBtn(() => base64Area.value), downloadBtn(() => base64Area.value, 'image.txt')]),
+        uploadPreview,
+        uploadInfo,
+        pane('Base64', base64Area, [copyBtn(() => base64Area.value), downloadBtn(() => base64Area.value, 'file.base64.txt')]),
       );
 
-      const decodeInput = area({ rows: 8, placeholder: 'data:image/png;base64,…' });
-      const decodePreview = h('img', { class: 'dt-preview-img', alt: 'preview' });
+      const decodeInput = area({ rows: 8, placeholder: 'data:application/pdf;base64,… or raw base64', wrap: 'soft' });
+      const decodePreview = h('div', { class: 'dt-b64-preview' });
       const decodeInfo = h('div');
       const decodeError = errorSlot();
+      let decodedName = 'file.bin';
+      let decodedBlob: Blob | null = null;
+
       const decode = () => {
         const raw = decodeInput.value.trim();
+        decodePreview.replaceChildren();
+        decodeInfo.replaceChildren();
+        decodedBlob = null;
         if (!raw) {
-          decodePreview.removeAttribute('src');
-          decodeInfo.replaceChildren();
           setError(decodeError, null);
           return;
         }
-        const dataUrl = raw.startsWith('data:') ? raw : `data:image/png;base64,${raw.replace(/\s+/g, '')}`;
-        decodePreview.src = dataUrl;
-        setError(decodeError, null);
-        const image = new Image();
-        image.onload = () => {
-          decodeInfo.replaceChildren(
-            stats([
-              [ctx.pick('Dimensions', 'Размеры'), `${image.naturalWidth} × ${image.naturalHeight}`],
-              [ctx.pick('Base64 length', 'Длина Base64'), dataUrl.length],
-              ['MIME', dataUrl.slice(5, dataUrl.indexOf(';')) || '—'],
-            ]),
-          );
-        };
-        image.onerror = () => {
-          decodeInfo.replaceChildren();
-          setError(decodeError, ctx.pick('Invalid image data.', 'Некорректные данные изображения.'));
-        };
-        image.src = dataUrl;
+        try {
+          const fromDataUrl = decodeDataUrl(raw);
+          const bytes = fromDataUrl?.bytes ?? base64ToBytes(raw.replace(/\s+/g, ''));
+          const declared = fromDataUrl?.mime ?? '';
+          const mime = declared && declared !== 'application/octet-stream' ? declared : sniffMime(bytes);
+          const dataUrl = `data:${mime};base64,${bytesToBase64(bytes)}`;
+          decodedName = `file.${extensionFor(mime)}`;
+          decodedBlob = new Blob([bytes as BlobPart], { type: mime });
+          present(decodePreview, decodeInfo, decodedName, mime, bytes, dataUrl);
+          setError(decodeError, null);
+        } catch {
+          decodedBlob = null;
+          setError(decodeError, ctx.pick('Invalid Base64 data.', 'Некорректные данные Base64.'));
+        }
       };
       decodeInput.addEventListener('input', decode);
 
@@ -199,39 +298,30 @@ function base64ImageTool(): ReturnType<typeof defineTool> {
         { class: 'dt-stack' },
         pane('Base64 / data URL', decodeInput),
         decodeError,
+        decodePreview,
+        decodeInfo,
         h(
           'div',
-          { class: 'dt-stack' },
-          decodePreview,
-          decodeInfo,
-          h(
-            'div',
-            { class: 'dt-inline-actions' },
-            btn(ctx.pick('Download image', 'Скачать изображение'), () => {
-              const src = decodePreview.getAttribute('src');
-              if (!src) return;
-              const comma = src.indexOf(',');
-              const mime = src.slice(5, src.indexOf(';')) || 'image/png';
-              const bytes = base64ToBytes(src.slice(comma + 1));
-              const blob = new Blob([bytes as BlobPart], { type: mime });
-              const link = document.createElement('a');
-              link.href = URL.createObjectURL(blob);
-              link.download = mime.includes('jpeg') ? 'image.jpg' : mime.includes('svg') ? 'image.svg' : 'image.png';
-              link.click();
-              setTimeout(() => URL.revokeObjectURL(link.href), 2000);
-            }, { variant: 'primary' }),
-            copyBtn(() => decodeInput.value),
+          { class: 'dt-inline-actions' },
+          btn(
+            ctx.pick('Download file', 'Скачать файл'),
+            () => {
+              if (decodedBlob) downloadBlob(decodedName, decodedBlob);
+            },
+            { variant: 'primary' },
           ),
+          copyBtn(() => decodeInput.value),
         ),
       );
 
       root.append(tabs([
-        { id: 'upload', label: ctx.pick('Image → Base64', 'Изображение → Base64'), render: () => uploadTab },
-        { id: 'decode', label: ctx.pick('Base64 → Image', 'Base64 → Изображение'), render: () => decodeTab },
+        { id: 'upload', label: ctx.pick('File → Base64', 'Файл → Base64'), render: () => uploadTab },
+        { id: 'decode', label: ctx.pick('Base64 → File', 'Base64 → Файл'), render: () => decodeTab },
       ]));
     },
   });
 }
+
 
 interface CertificateInfo {
   subject: string;
@@ -922,7 +1012,7 @@ function urlTool(): ReturnType<typeof defineTool> {
 
 export const encoderTools = [
   base64TextTool(),
-  base64ImageTool(),
+  base64FileTool(),
   certificateTool(),
   gzipTool(),
   htmlTool(),

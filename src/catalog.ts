@@ -196,14 +196,14 @@ export const CATALOG: CatalogEntry[] = [
   {
     "id": "encoders-base64-image",
     "group": "encoders",
-    "keywords": "base64 image dataurl png jpeg preview",
+    "keywords": "base64 file dataurl image preview archive zip pdf gzip download",
     "name": {
-      "en": "Base64 Image",
-      "ru": "Base64: изображение"
+      "en": "Base64 File",
+      "ru": "Base64: файл"
     },
     "desc": {
-      "en": "Convert images to Base64 data URLs and preview Base64 images.",
-      "ru": "Преобразование изображений в Base64 data URL и предпросмотр Base64-изображений."
+      "en": "Convert any file (image, archive, PDF…) to a Base64 data URL and decode Base64 back into a file.",
+      "ru": "Преобразование файлов (изображение, архив, PDF…) в Base64 data URL и обратное декодирование в файл."
     }
   },
   {

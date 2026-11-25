@@ -995,7 +995,7 @@ body {
 }
 
 .dt-main.dt-main-fill .dt-stack > .dt-split:has(.dt-area),
-.dt-main.dt-main-fill .dt-stack > .dt-pane:has(.dt-area):not(.is-collapsed) {
+.dt-main.dt-main-fill .dt-stack > .dt-pane:has(.dt-area):not(.is-collapsed):not(:has(~ .dt-pane)) {
   flex: 1 1 auto;
   min-height: 240px;
 }
@@ -1051,6 +1051,18 @@ body {
 .dt-main.dt-main-fill .dt-pane-content .dt-area {
   flex: 1 1 auto;
   min-height: 64px;
+}
+
+/* Markdown-style two-column pane grids behave like splits. */
+.dt-main.dt-main-fill .dt-md-panes:has(.dt-area) {
+  flex: 1 1 auto;
+  min-height: 240px;
+  align-items: stretch;
+}
+
+.dt-main.dt-main-fill .dt-md-panes > .dt-pane:has(.dt-area):not(.is-collapsed) {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* Panes that should stretch even without a text area (marked with .dt-pane-fill). */
@@ -1679,6 +1691,47 @@ textarea.dt-input {
 
 .dt-preview-img:not([src]) {
   display: none;
+}
+
+/* Base64 file preview card (non-image files) */
+
+.dt-b64-preview {
+  display: grid;
+  gap: 8px;
+}
+
+.dt-b64-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px dashed var(--dt-border);
+  border-radius: var(--dt-radius-sm);
+  background: var(--dt-code-bg);
+}
+
+.dt-b64-file-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--dt-accent);
+}
+
+.dt-b64-file-meta {
+  min-width: 0;
+}
+
+.dt-b64-file-name {
+  font-size: 13px;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.dt-b64-file-sub {
+  margin-top: 2px;
+  font-family: var(--dt-mono);
+  font-size: 11px;
+  color: var(--dt-muted);
 }
 
 .dt-qr-frame {
