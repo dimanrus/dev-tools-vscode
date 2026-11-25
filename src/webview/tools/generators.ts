@@ -119,11 +119,10 @@ function hashTool(): ReturnType<typeof defineTool> {
               void compute();
             }),
             btn(ctx.pick('Recompute', 'Пересчитать'), () => void compute(), { variant: 'primary' }),
-            copyBtn(() => (output.querySelector('.dt-hash-value')?.textContent ?? '')),
           ),
           error,
           split(pane(ctx.pick('Text', 'Текст'), input), pane(ctx.pick('HMAC key (optional)', 'Ключ HMAC (необязательно)'), key)),
-          pane(ctx.pick('Digests', 'Хеши'), output),
+          pane(ctx.pick('Digests', 'Хеши'), output, [copyBtn(() => (output.querySelector('.dt-hash-value')?.textContent ?? ''))]),
         ),
       );
       void compute();
@@ -212,7 +211,7 @@ function loremTool(): ReturnType<typeof defineTool> {
         h(
           'div',
           { class: 'dt-stack' },
-          split(controls, h('div', { class: 'dt-stack' }, toolbar(copyBtn(() => output.value), downloadBtn(() => output.value, 'lorem.txt')), pane(ctx.pick('Result', 'Результат'), output))),
+          split(controls, pane(ctx.pick('Result', 'Результат'), output, [copyBtn(() => output.value), downloadBtn(() => output.value, 'lorem.txt')])),
         ),
       );
     },
@@ -324,7 +323,7 @@ function passwordTool(): ReturnType<typeof defineTool> {
         h(
           'div',
           { class: 'dt-stack' },
-          split(controls, h('div', { class: 'dt-stack' }, toolbar(copyBtn(() => output.value), downloadBtn(() => output.value, 'passwords.txt')), pane(ctx.pick('Passwords', 'Пароли'), output))),
+          split(controls, pane(ctx.pick('Passwords', 'Пароли'), output, [copyBtn(() => output.value), downloadBtn(() => output.value, 'passwords.txt')])),
           info,
         ),
       );
@@ -430,8 +429,8 @@ function uuidTool(): ReturnType<typeof defineTool> {
               generate();
             }),
           ),
-          toolbar(btn(ctx.pick('Generate', 'Сгенерировать'), generate, { variant: 'primary' }), copyBtn(() => output.value), downloadBtn(() => output.value, 'uuids.txt')),
-          pane('UUID', output),
+          toolbar(btn(ctx.pick('Generate', 'Сгенерировать'), generate, { variant: 'primary' })),
+          pane('UUID', output, [copyBtn(() => output.value), downloadBtn(() => output.value, 'uuids.txt')]),
         ),
       );
       generate();
@@ -508,10 +507,8 @@ function ulidTool(): ReturnType<typeof defineTool> {
               }),
             ),
             btn(ctx.pick('Generate', 'Сгенерировать'), generate, { variant: 'primary' }),
-            copyBtn(() => output.value),
-            downloadBtn(() => output.value, 'ulids.txt'),
           ),
-          pane('ULID', output),
+          pane('ULID', output, [copyBtn(() => output.value), downloadBtn(() => output.value, 'ulids.txt')]),
           info,
         ),
       );

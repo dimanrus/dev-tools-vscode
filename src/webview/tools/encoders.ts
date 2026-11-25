@@ -91,11 +91,15 @@ function base64TextTool(): ReturnType<typeof defineTool> {
               modeSelect.value = mode;
               update();
             }, { variant: 'ghost' }),
-            copyBtn(() => output.value),
-            downloadBtn(() => output.value, mode === 'encode' ? 'encoded.txt' : 'decoded.txt'),
           ),
           error,
-          split(pane(ctx.pick('Input', 'Вход'), input), pane(ctx.pick('Output', 'Результат'), output)),
+          split(
+            pane(ctx.pick('Input', 'Вход'), input),
+            pane(ctx.pick('Output', 'Результат'), output, [
+              copyBtn(() => output.value),
+              downloadBtn(() => output.value, mode === 'encode' ? 'encoded.txt' : 'decoded.txt'),
+            ]),
+          ),
           stats([
             [ctx.pick('Input size', 'Размер входа'), `${new TextEncoder().encode(input.value).length} B`],
             [ctx.pick('Output length', 'Длина выхода'), output.value.length],
@@ -403,11 +407,12 @@ function gzipTool(): ReturnType<typeof defineTool> {
             checkbox(ctx.pick('Input is Base64', 'Вход в Base64'), inputIsBase64, (value) => {
               inputIsBase64 = value;
             }),
-            copyBtn(() => output.value),
-            downloadBtn(() => output.value, 'result.txt'),
           ),
           error,
-          split(pane(ctx.pick('Input', 'Вход'), input), pane(ctx.pick('Output', 'Результат'), output)),
+          split(
+            pane(ctx.pick('Input', 'Вход'), input),
+            pane(ctx.pick('Output', 'Результат'), output, [copyBtn(() => output.value), downloadBtn(() => output.value, 'result.txt')]),
+          ),
           info,
         ),
       );
@@ -458,9 +463,12 @@ function htmlTool(): ReturnType<typeof defineTool> {
         h(
           'div',
           { class: 'dt-stack' },
-          toolbar(modeSelect, copyBtn(() => output.value), downloadBtn(() => output.value, 'entities.txt')),
+          toolbar(modeSelect),
           error,
-          split(pane(ctx.pick('Input', 'Вход'), input), pane(ctx.pick('Output', 'Результат'), output)),
+          split(
+            pane(ctx.pick('Input', 'Вход'), input),
+            pane(ctx.pick('Output', 'Результат'), output, [copyBtn(() => output.value), downloadBtn(() => output.value, 'entities.txt')]),
+          ),
           pane(
             ctx.pick('Common entities', 'Основные сущности'),
             table(
@@ -899,10 +907,12 @@ function urlTool(): ReturnType<typeof defineTool> {
               fullUrl = value;
               update();
             }),
-            copyBtn(() => output.value),
           ),
           error,
-          split(pane(ctx.pick('Input', 'Вход'), input), pane(ctx.pick('Output', 'Результат'), output)),
+          split(
+            pane(ctx.pick('Input', 'Вход'), input),
+            pane(ctx.pick('Output', 'Результат'), output, [copyBtn(() => output.value)]),
+          ),
           pane(ctx.pick('Parsed URL', 'Разобранный URL'), parts),
         ),
       );

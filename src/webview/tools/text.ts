@@ -273,13 +273,15 @@ function markdownTool(): ReturnType<typeof defineTool> {
         ],
         'preview',
       );
-      const panes = h('div', { class: 'dt-md-panes' }, pane(ctx.pick('Markdown', 'Markdown'), input), pane(ctx.pick('Preview', 'Предпросмотр'), preview));
+      const downloadHtml = () => downloadBtn(() => html, 'document.html', ctx.pick('Download HTML', 'Скачать HTML'));
+      const previewPane = () => pane(ctx.pick('Preview', 'Предпросмотр'), preview, [downloadHtml()]);
+      const panes = h('div', { class: 'dt-md-panes' }, pane(ctx.pick('Markdown', 'Markdown'), input), previewPane());
       viewSelect.addEventListener('change', () => {
         panes.replaceChildren();
         if (viewSelect.value === 'preview') {
-          panes.append(pane(ctx.pick('Markdown', 'Markdown'), input), pane(ctx.pick('Preview', 'Предпросмотр'), preview));
+          panes.append(pane(ctx.pick('Markdown', 'Markdown'), input), previewPane());
         } else {
-          panes.append(pane(ctx.pick('Markdown', 'Markdown'), input), pane('HTML', htmlArea, [copyBtn(() => html)]));
+          panes.append(pane(ctx.pick('Markdown', 'Markdown'), input), pane('HTML', htmlArea, [copyBtn(() => html), downloadHtml()]));
         }
       });
 
@@ -293,7 +295,6 @@ function markdownTool(): ReturnType<typeof defineTool> {
               input.value = '## Title\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n> Quote\n\n**bold** and `code`\n';
               render();
             }, { variant: 'ghost' }),
-            downloadBtn(() => html, 'document.html', ctx.pick('Download HTML', 'Скачать HTML')),
           ),
           error,
           panes,

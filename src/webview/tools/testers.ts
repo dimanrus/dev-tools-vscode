@@ -460,9 +460,9 @@ function xmlXsdTool(): ReturnType<typeof defineTool> {
         h(
           'div',
           { class: 'dt-stack' },
-          toolbar(btn(ctx.pick('Validate', 'Проверить'), validate, { variant: 'primary' }), copyBtn(() => xml.value)),
+          toolbar(btn(ctx.pick('Validate', 'Проверить'), validate, { variant: 'primary' })),
           error,
-          split(pane('XML', xml), pane('XSD', xsd)),
+          split(pane('XML', xml, [copyBtn(() => xml.value)]), pane('XSD', xsd)),
           pane(ctx.pick('Validation result', 'Результат проверки'), output),
         ),
       );

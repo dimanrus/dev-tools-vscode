@@ -1032,6 +1032,10 @@ body {
   flex-direction: column;
 }
 
+.dt-main.dt-main-fill .dt-pane-body:has(> .dt-pane-content:empty) {
+  display: none;
+}
+
 .dt-main.dt-main-fill .dt-pane-content:has(.dt-area) {
   display: flex;
   flex: 1 1 auto;

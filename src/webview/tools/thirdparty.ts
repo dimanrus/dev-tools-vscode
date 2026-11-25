@@ -320,11 +320,9 @@ function jsonSchemaTool(): ReturnType<typeof defineTool> {
               title = value;
             } }),
             btn(ctx.pick('Generate', 'Сгенерировать'), generate, { variant: 'primary' }),
-            copyBtn(() => output.value),
-            downloadBtn(() => output.value, 'schema.json'),
           ),
           error,
-          split(pane(ctx.pick('JSON sample', 'Пример JSON'), input), pane('JSON Schema', output)),
+          split(pane(ctx.pick('JSON sample', 'Пример JSON'), input), pane('JSON Schema', output, [copyBtn(() => output.value), downloadBtn(() => output.value, 'schema.json')])),
         ),
       );
     },
@@ -607,8 +605,7 @@ function resxTool(): ReturnType<typeof defineTool> {
           upload,
           error,
           info,
-          toolbar(downloadBtn(() => exportFile(), 'translated.resx'), copyBtn(() => exportFile())),
-          pane(ctx.pick('Entries', 'Записи'), host),
+          pane(ctx.pick('Entries', 'Записи'), host, [downloadBtn(() => exportFile(), 'translated.resx'), copyBtn(() => exportFile())]),
         ),
       );
     },
@@ -866,9 +863,9 @@ function xsdGeneratorTool(): ReturnType<typeof defineTool> {
         h(
           'div',
           { class: 'dt-stack' },
-          toolbar(btn(ctx.pick('Generate XSD', 'Сгенерировать XSD'), generate, { variant: 'primary' }), copyBtn(() => output.value), downloadBtn(() => output.value, 'schema.xsd')),
+          toolbar(btn(ctx.pick('Generate XSD', 'Сгенерировать XSD'), generate, { variant: 'primary' })),
           error,
-          split(pane('XML sample', input), pane('XSD', output)),
+          split(pane('XML sample', input), pane('XSD', output, [copyBtn(() => output.value), downloadBtn(() => output.value, 'schema.xsd')])),
         ),
       );
     },

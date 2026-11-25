@@ -177,12 +177,14 @@ function classicTool(): ReturnType<typeof defineTool> {
           error,
           split(
             pane(ctx.pick('Input', 'Вход'), inputArea, [copyBtn(() => inputArea.value)]),
-            pane(ctx.pick('Output', 'Результат'), outputArea, [copyBtn(() => outputArea.value)]),
+            pane(ctx.pick('Output', 'Результат'), outputArea, [
+              copyBtn(() => outputArea.value),
+              btn(ctx.pick('Use output as input', 'Результат во вход'), () => {
+                inputArea.value = outputArea.value;
+                apply();
+              }, { variant: 'subtle' }),
+            ]),
           ),
-          toolbar(btn(ctx.pick('Use output as input', 'Результат во вход'), () => {
-            inputArea.value = outputArea.value;
-            apply();
-          }, { variant: 'subtle' })),
           info,
           note(ctx.pick('Educational ciphers only — they provide no real security.', 'Только учебные шифры — они не обеспечивают реальную защиту.'), 'warn'),
         ),

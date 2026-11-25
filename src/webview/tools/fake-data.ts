@@ -380,22 +380,15 @@ function fakeDataTool(): ReturnType<typeof defineTool> {
         ),
       );
 
-      const exportPane = pane(
-        ctx.pick('Export', 'Экспорт'),
-        h(
-          'div',
-          { class: 'dt-stack' },
-          toolbar(
-            btn(ctx.pick('Download CSV', 'Скачать CSV'), () => downloadBlob('fake-data.csv', new Blob([toCsv()], { type: 'text/csv;charset=utf-8' })), { variant: 'primary' }),
-            btn(
-              ctx.pick('Download JSON', 'Скачать JSON'),
-              () => downloadBlob('fake-data.json', new Blob([JSON.stringify(filteredRecords(), null, 2)], { type: 'application/json' })),
-              { variant: 'ghost' },
-            ),
-            btn(ctx.pick('Copy CSV', 'Копировать CSV'), () => void copyText(toCsv()), { variant: 'ghost' }),
-          ),
+      const exportPane = pane(ctx.pick('Export', 'Экспорт'), '', [
+        btn(ctx.pick('Download CSV', 'Скачать CSV'), () => downloadBlob('fake-data.csv', new Blob([toCsv()], { type: 'text/csv;charset=utf-8' })), { variant: 'primary' }),
+        btn(
+          ctx.pick('Download JSON', 'Скачать JSON'),
+          () => downloadBlob('fake-data.json', new Blob([JSON.stringify(filteredRecords(), null, 2)], { type: 'application/json' })),
+          { variant: 'ghost' },
         ),
-      );
+        btn(ctx.pick('Copy CSV', 'Копировать CSV'), () => void copyText(toCsv()), { variant: 'ghost' }),
+      ]);
 
       renderColumns();
       info.textContent = new Date().toLocaleTimeString();

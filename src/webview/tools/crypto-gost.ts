@@ -419,9 +419,9 @@ function gostHashTool(): ReturnType<typeof defineTool> {
       const hashTab = h(
         'div',
         { class: 'dt-stack' },
-        toolbar(field(ctx.pick('Algorithm', 'Алгоритм'), hashSelect), field(ctx.pick('Output', 'Вывод'), hashEncoding), copyBtn(() => hashOutput.value)),
+        toolbar(field(ctx.pick('Algorithm', 'Алгоритм'), hashSelect), field(ctx.pick('Output', 'Вывод'), hashEncoding)),
         hashError,
-        split(pane(ctx.pick('Message', 'Сообщение'), hashInput), pane(ctx.pick('Digest', 'Хеш'), hashOutput)),
+        split(pane(ctx.pick('Message', 'Сообщение'), hashInput), pane(ctx.pick('Digest', 'Хеш'), hashOutput, [copyBtn(() => hashOutput.value)])),
         hashInfo,
       );
 

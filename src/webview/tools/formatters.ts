@@ -126,11 +126,12 @@ function jsonFormatterTool(): ReturnType<typeof defineTool> {
             checkbox(ctx.pick('Sort keys on format', 'Сортировать ключи при форматировании'), false, (value) => {
               sortKeys = value;
             }),
-            copyBtn(() => output.value),
-            downloadBtn(() => output.value, 'formatted.json'),
           ),
           error,
-          split(pane('JSON', input, [copyBtn(() => input.value)]), pane(ctx.pick('Result', 'Результат'), output)),
+          split(
+            pane('JSON', input, [copyBtn(() => input.value)]),
+            pane(ctx.pick('Result', 'Результат'), output, [copyBtn(() => output.value), downloadBtn(() => output.value, 'formatted.json')]),
+          ),
           info,
         ),
       );
@@ -370,11 +371,12 @@ function sqlFormatterTool(): ReturnType<typeof defineTool> {
               uppercase = value;
               update();
             }),
-            copyBtn(() => output.value),
-            downloadBtn(() => output.value, 'query.sql'),
           ),
           error,
-          split(pane('SQL', input), pane(ctx.pick('Result', 'Результат'), output)),
+          split(
+            pane('SQL', input),
+            pane(ctx.pick('Result', 'Результат'), output, [copyBtn(() => output.value), downloadBtn(() => output.value, 'query.sql')]),
+          ),
         ),
       );
       update();
@@ -475,11 +477,9 @@ function xmlFormatterTool(): ReturnType<typeof defineTool> {
               if (!document) return;
               output.value = new XMLSerializer().serializeToString(document).replace(/>\s+</g, '><');
             }),
-            copyBtn(() => output.value),
-            downloadBtn(() => output.value, 'formatted.xml'),
           ),
           error,
-          split(pane('XML', input), pane(ctx.pick('Result', 'Результат'), output)),
+          split(pane('XML', input), pane(ctx.pick('Result', 'Результат'), output, [copyBtn(() => output.value), downloadBtn(() => output.value, 'formatted.xml')])),
           summary,
         ),
       );

@@ -105,7 +105,10 @@ function buildCodegenTool(format: 'json' | 'xml'): ToolDef {
       const error = errorSlot();
 
       const inputPane = pane(isJson ? 'JSON' : 'XML', input);
-      const outputPane = pane(LANGUAGE_LABELS[language], output);
+      const outputPane = pane(LANGUAGE_LABELS[language], output, [
+        copyBtn(() => output.value),
+        downloadBtn(() => output.value, () => `Models.${FILE_EXTENSIONS[language]}`),
+      ]);
       const outputTitle = outputPane.querySelector('.dt-pane-title');
 
       const rootInput = textInput({
@@ -240,15 +243,7 @@ function buildCodegenTool(format: 'json' | 'xml'): ToolDef {
             namespaceWrap,
           ),
           error,
-          split(
-            inputPane,
-            h(
-              'div',
-              { class: 'dt-stack' },
-              outputPane,
-              toolbar(copyBtn(() => output.value), downloadBtn(() => output.value, () => `Models.${FILE_EXTENSIONS[language]}`)),
-            ),
-          ),
+          split(inputPane, outputPane),
           pane(ctx.pick('Usage', 'Использование'), usage, [copyBtn(() => usage.value)]),
           formatHint,
           phpHint,

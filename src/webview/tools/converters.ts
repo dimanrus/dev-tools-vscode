@@ -342,7 +342,7 @@ function jsonTableTool(): ReturnType<typeof defineTool> {
             h(
               'div',
               { class: 'dt-stack' },
-              toolbar(delimiter, withHeader, copyBtn(() => currentCsv), downloadBtn(() => currentCsv, 'data.csv')),
+              toolbar(delimiter, withHeader),
               error,
               pane(ctx.pick('Table', 'Таблица'), tableHost),
               pane(ctx.pick('CSV', 'CSV'), csvArea, [copyBtn(() => currentCsv), downloadBtn(() => currentCsv, 'data.csv')]),
