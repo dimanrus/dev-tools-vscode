@@ -444,6 +444,13 @@ function renderTool(): void {
       ),
     );
   }
+  // File pickers are hoisted into the tool header: they save a whole block of vertical space.
+  const drops = [...body.querySelectorAll<HTMLElement>('.dt-drop')];
+  if (drops.length) {
+    const headerActions = h('div', { class: 'dt-tool-actions' });
+    for (const drop of drops) headerActions.appendChild(drop);
+    header.appendChild(headerActions);
+  }
   normalizePaneCollapse(body);
   main.classList.toggle('dt-main-fill', shouldFillHeight(currentTool, body));
   main.scrollTop = 0;
