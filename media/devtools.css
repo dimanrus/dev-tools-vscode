@@ -3232,6 +3232,7 @@ textarea.dt-input {
   height: 26px;
   min-width: 26px;
   padding: 0;
+  pointer-events: auto;
 }
 
 .dt-scene-hud {
