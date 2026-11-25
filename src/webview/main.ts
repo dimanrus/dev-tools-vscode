@@ -444,11 +444,15 @@ function renderTool(): void {
       ),
     );
   }
-  // File pickers are hoisted into the tool header: they save a whole block of vertical space.
-  const drops = [...body.querySelectorAll<HTMLElement>('.dt-drop')];
-  if (drops.length) {
+  // File pickers and header action groups are hoisted into the tool header: they save a whole block of vertical space.
+  const groups = [...body.querySelectorAll<HTMLElement>('.dt-head-actions')];
+  const drops = [...body.querySelectorAll<HTMLElement>('.dt-drop')].filter(
+    (drop) => !groups.some((group) => group.contains(drop)),
+  );
+  const headerTargets = [...groups, ...drops];
+  if (headerTargets.length) {
     const headerActions = h('div', { class: 'dt-tool-actions' });
-    for (const drop of drops) headerActions.appendChild(drop);
+    for (const target of headerTargets) headerActions.appendChild(target);
     header.appendChild(headerActions);
   }
   normalizePaneCollapse(body);

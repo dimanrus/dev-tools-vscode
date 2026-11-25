@@ -638,14 +638,14 @@ export const CATALOG: CatalogEntry[] = [
   {
     "id": "media-cad-editor",
     "group": "media",
-    "keywords": "cad dxf dwg sketchup push pull face measure snap vertex line dimension layers scenes components obj stl glb fbx dae 3ds texture import",
+    "keywords": "cad dxf dwg sketchup push pull face measure snap vertex line dimension scenes components obj stl glb fbx dae 3ds texture import",
     "name": {
       "en": "CAD Editor",
       "ru": "CAD-редактор"
     },
     "desc": {
-      "en": "Sketch footprints, push/pull any face, snap lines and measurements to vertices/faces, use layers/scenes and exchange DXF/OBJ/STL/GLB/FBX.",
-      "ru": "Черчение контуров, выдавливание любой грани, линии и замеры с привязкой к вершинам/граням, слои/сцены и обмен DXF/OBJ/STL/GLB/FBX."
+      "en": "Sketch footprints, push/pull any face, snap lines and measurements to vertices/faces, keep saved camera scenes and exchange DXF/OBJ/STL/GLB/FBX.",
+      "ru": "Черчение контуров, выдавливание любой грани, линии и замеры с привязкой к вершинам/граням, сохранённые виды и обмен DXF/OBJ/STL/GLB/FBX."
     }
   },
   {

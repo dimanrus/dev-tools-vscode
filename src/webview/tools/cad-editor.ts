@@ -1,4 +1,4 @@
-/** CAD editor: sketch, push/pull, precise dimensions, layers, scenes, measure and model exchange. */
+/** CAD editor: sketch, push/pull, precise dimensions, scenes, measure and model exchange. */
 import * as THREE from 'three';
 import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
@@ -40,12 +40,6 @@ type StyleMode = 'solid' | 'wireframe' | 'blueprint';
 type SnapType = 'vertex' | 'face' | 'grid';
 type FaceAxis = 'x' | 'y' | 'z';
 
-interface CadLayer {
-  id: number;
-  name: string;
-  visible: boolean;
-}
-
 interface CadPart {
   id: number;
   kind: PartKind;
@@ -55,7 +49,6 @@ interface CadPart {
   depth: number;
   height: number;
   radius: number;
-  layerId: number;
   componentId: number | null;
   color: string;
   texture: THREE.Texture | null;
@@ -75,7 +68,6 @@ interface CadLineObject {
   id: number;
   points: THREE.Vector3[];
   object: THREE.Line;
-  layerId: number;
 }
 
 interface SnapResult {
@@ -111,7 +103,6 @@ interface CadScene {
   phi: number;
   radius: number;
   target: [number, number, number];
-  layers: Record<number, boolean>;
 }
 
 interface CadDrag {
@@ -156,19 +147,17 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
     icon: '<path d="M4 20l4 -9l4 9z"/><path d="M14 20v-6h6v6z"/><path d="M4 7l4 -4l4 4l-4 4z"/><path d="M12 12l6 -3l4 3l-4 3z"/>',
     name: { en: 'CAD Editor', ru: 'CAD-редактор' },
     desc: {
-      en: 'Sketch footprints, push/pull any face, snap lines and measurements to vertices/faces, use layers/scenes and exchange DXF/OBJ/STL/GLB/FBX.',
-      ru: 'Черчение контуров, выдавливание любой грани, линии и замеры с привязкой к вершинам/граням, слои/сцены и обмен DXF/OBJ/STL/GLB/FBX.',
+      en: 'Sketch footprints, push/pull any face, snap lines and measurements to vertices/faces, keep saved camera scenes and exchange DXF/OBJ/STL/GLB/FBX.',
+      ru: 'Черчение контуров, выдавливание любой грани, линии и замеры с привязкой к вершинам/граням, сохранённые виды и обмен DXF/OBJ/STL/GLB/FBX.',
     },
-    keywords: 'cad dxf dwg sketchup push pull face measure snap vertex line dimension layers scenes components obj stl glb fbx dae 3ds texture import',
+    keywords: 'cad dxf dwg sketchup push pull face measure snap vertex line dimension scenes components obj stl glb fbx dae 3ds texture import',
     mount(root, ctx) {
       let nextId = 1;
-      let nextLayerId = 2;
       let nextComponentId = 1;
       let nextSceneId = 1;
       let nextMeasureId = 1;
       let nextLineId = 1;
       let selectedId = 0;
-      let activeLayerId = 1;
       let tool: CadTool = 'rect';
       let mode: CadMode = 'move';
       let snap = true;
@@ -192,7 +181,6 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
       const target = new THREE.Vector3(0, 0.8, 0);
       const parts: CadPart[] = [];
       const lines: CadLineObject[] = [];
-      const layers: CadLayer[] = [{ id: 1, name: 'Layer 1', visible: true }];
       const scenes: CadScene[] = [];
       const measurements: Measurement[] = [];
 
@@ -205,7 +193,6 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
       const list = h('div', { class: 'dt-ie-layers' });
       const inspector = h('div', { class: 'dt-stack' });
       const scenesHost = h('div', { class: 'dt-stack' });
-      const layersHost = h('div', { class: 'dt-stack' });
       const stats = h('span', { class: 'dt-ie-stats dt-hint' });
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -328,16 +315,10 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
         syncUi();
       });
       const snapValue = (value: number): number => (snap ? Math.round(value / 0.25) * 0.25 : Math.round(value * 1000) / 1000);
-      const layerOf = (part: CadPart): CadLayer | undefined => layers.find((layer) => layer.id === part.layerId);
 
       const applyVisibility = (): void => {
-        for (const part of parts) {
-          const layer = layerOf(part);
-          part.mesh.visible = part.visible && (layer?.visible ?? true);
-        }
-        for (const line of lines) {
-          line.object.visible = layers.find((layer) => layer.id === line.layerId)?.visible ?? true;
-        }
+        for (const part of parts) part.mesh.visible = part.visible;
+        for (const line of lines) line.object.visible = true;
       };
 
       const materialsOf = (part: CadPart): THREE.MeshStandardMaterial[] => {
@@ -403,7 +384,6 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
           depth: 0.1,
           height: 1,
           radius: 0.1,
-          layerId: activeLayerId,
           componentId: null,
           color,
           texture: null,
@@ -452,7 +432,6 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
           name: `${source.name} ${ctx.pick('copy', 'копия')}`,
           mesh,
           componentId: source.componentId,
-          layerId: activeLayerId,
         };
         parts.push(copy);
         mesh.name = copy.name;
@@ -503,137 +482,48 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
         renderTree();
       };
 
-      const renderLayers = (): void => {
-        layersHost.replaceChildren();
-        for (const layer of layers) {
-          layersHost.appendChild(
+      const renderTree = (): void => {
+        list.replaceChildren();
+        for (const part of [...parts].reverse()) {
+          list.appendChild(
             h(
               'div',
-              { class: `dt-row dt-tree-row ${layer.id === activeLayerId ? 'is-active' : ''}` },
+              { class: `dt-tree-row ${part.id === selectedId ? 'is-active' : ''}` },
               h(
                 'button',
                 {
                   class: 'dt-tree-eye',
                   type: 'button',
-                  title: layer.visible ? ctx.pick('Hide layer', 'Скрыть слой') : ctx.pick('Show layer', 'Показать слой'),
+                  title: part.visible ? ctx.pick('Hide object', 'Скрыть объект') : ctx.pick('Show object', 'Показать объект'),
                   onclick: (event: MouseEvent) => {
                     event.stopPropagation();
-                    layer.visible = !layer.visible;
+                    part.visible = !part.visible;
                     applyVisibility();
                     renderTree();
-                    renderLayers();
                   },
                 },
-                svgIcon(layer.visible ? ICONS.eye : ICONS.eyeOff, 13),
+                svgIcon(part.visible ? ICONS.eye : ICONS.eyeOff, 13),
               ),
               h(
                 'button',
-                {
-                  class: 'dt-ie-layer',
-                  type: 'button',
-                  onclick: () => {
-                    activeLayerId = layer.id;
-                    renderLayers();
-                  },
-                },
-                h('span', { class: 'dt-ie-layer-name' }, layer.name),
-                h('span', { class: 'dt-ie-layer-kind' }, `${parts.filter((part) => part.layerId === layer.id).length}`),
-              ),
-              layers.length > 1
-                ? iconBtn(
-                    ICONS.trash,
-                    ctx.pick('Delete layer', 'Удалить слой'),
-                    () => {
-                      const fallback = layers.find((item) => item.id !== layer.id);
-                      if (!fallback) return;
-                      for (const part of parts) if (part.layerId === layer.id) part.layerId = fallback.id;
-                      for (const line of lines) if (line.layerId === layer.id) line.layerId = fallback.id;
-                      layers.splice(layers.indexOf(layer), 1);
-                      activeLayerId = fallback.id;
-                      applyVisibility();
-                      syncUi();
-                    },
-                    { variant: 'subtle', class: 'dt-tree-eye' },
-                  )
-                : null,
-            ),
-          );
-        }
-        layersHost.appendChild(
-          h(
-            'div',
-            { class: 'dt-row' },
-            textInput({ placeholder: ctx.pick('New layer name', 'Имя нового слоя') }),
-            btn(
-              ctx.pick('Add layer', 'Добавить слой'),
-              (event: MouseEvent) => {
-                const row = (event.currentTarget as HTMLElement).parentElement;
-                const input = row?.querySelector('input');
-                const name = input?.value.trim() || `Layer ${layers.length + 1}`;
-                const layer: CadLayer = { id: nextLayerId++, name, visible: true };
-                layers.push(layer);
-                activeLayerId = layer.id;
-                if (input) input.value = '';
-                syncUi();
-              },
-              { variant: 'ghost' },
-            ),
-          ),
-        );
-      };
-
-      const renderTree = (): void => {
-        list.replaceChildren();
-        for (const layer of layers) {
-          const kids = parts.filter((part) => part.layerId === layer.id);
-          list.appendChild(
-            h(
-              'div',
-              { class: 'dt-tree-row dt-tree-layer' },
-              h('span', { class: 'dt-ie-layer-name' }, `${layer.name}${layer.visible ? '' : ' · ' + ctx.pick('hidden', 'скрыт')}`),
-              h('span', { class: 'dt-ie-layer-kind' }, `${kids.length}`),
-            ),
-          );
-          for (const part of [...kids].reverse()) {
-            list.appendChild(
-              h(
-                'div',
-                { class: `dt-tree-row ${part.id === selectedId ? 'is-active' : ''}`, style: { paddingLeft: '14px' } },
+                { class: 'dt-ie-layer', type: 'button', onclick: () => selectPart(part.id) },
                 h(
-                  'button',
-                  {
-                    class: 'dt-tree-eye',
-                    type: 'button',
-                    onclick: (event: MouseEvent) => {
-                      event.stopPropagation();
-                      part.visible = !part.visible;
-                      applyVisibility();
-                      renderTree();
-                    },
-                  },
-                  svgIcon(part.visible ? ICONS.eye : ICONS.eyeOff, 13),
+                  'span',
+                  { class: 'dt-ie-layer-name' },
+                  `${part.name}${part.componentId ? ` · C${part.componentId}` : ''}`,
                 ),
                 h(
-                  'button',
-                  { class: 'dt-ie-layer', type: 'button', onclick: () => selectPart(part.id) },
-                  h(
-                    'span',
-                    { class: 'dt-ie-layer-name' },
-                    `${part.name}${part.componentId ? ` · C${part.componentId}` : ''}`,
-                  ),
-                  h(
-                    'span',
-                    { class: 'dt-ie-layer-kind' },
-                    part.kind === 'box'
-                      ? `${part.width.toFixed(2)}×${part.depth.toFixed(2)}×${part.height.toFixed(2)}`
-                      : part.kind === 'cylinder'
-                        ? `r ${part.radius.toFixed(2)} · h ${part.height.toFixed(2)}`
-                        : ctx.pick('model', 'модель'),
-                  ),
+                  'span',
+                  { class: 'dt-ie-layer-kind' },
+                  part.kind === 'box'
+                    ? `${part.width.toFixed(2)}×${part.depth.toFixed(2)}×${part.height.toFixed(2)}`
+                    : part.kind === 'cylinder'
+                      ? `r ${part.radius.toFixed(2)} · h ${part.height.toFixed(2)}`
+                      : ctx.pick('model', 'модель'),
                 ),
               ),
-            );
-          }
+            ),
+          );
         }
         if (!parts.length) list.appendChild(note(ctx.pick('Sketch a rectangle or circle on the grid.', 'Начертите прямоугольник или круг по сетке.'), 'info'));
         stats.textContent = `${parts.length} ${ctx.pick('solids', 'тел')} · ${measurements.length} ${ctx.pick('measurements', 'замеров')} · ${lines.length} ${ctx.pick('lines', 'линий')}`;
@@ -761,7 +651,7 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
       const renderScenes = (): void => {
         scenesHost.replaceChildren();
         if (!scenes.length) {
-          scenesHost.appendChild(note(ctx.pick('Save the current camera and layer visibility as a scene.', 'Сохраните текущую камеру и видимость слоёв как сцену.'), 'info'));
+          scenesHost.appendChild(note(ctx.pick('Save the current camera as a scene.', 'Сохраните текущий вид камеры как сцену.'), 'info'));
           return;
         }
         for (const saved of scenes) {
@@ -777,10 +667,7 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
                   phi = saved.phi;
                   radius = saved.radius;
                   target.set(...saved.target);
-                  for (const layer of layers) layer.visible = saved.layers[layer.id] ?? true;
-                  applyVisibility();
                   applyCamera();
-                  renderLayers();
                   renderTree();
                 },
                 { variant: 'ghost' },
@@ -795,7 +682,6 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
       };
 
       const syncUi = (): void => {
-        renderLayers();
         renderTree();
         renderInspector();
         renderScenes();
@@ -999,7 +885,7 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
           const points = linePoints.map((point) => point.clone());
           const object = makeLine(points, 0xfbbf24, false);
           scene.add(object);
-          lines.push({ id: nextLineId++, points, object, layerId: activeLayerId });
+          lines.push({ id: nextLineId++, points, object });
         }
         if (linePreview) {
           scene.remove(linePreview);
@@ -1477,7 +1363,6 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
             depth: 0,
             height: 0,
             radius: 0,
-            layerId: activeLayerId,
             componentId: null,
             color: extension === 'dxf' ? '#7dd3fc' : '#94a3b8',
             texture: null,
@@ -1802,6 +1687,9 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
           btn(ctx.pick('Clear lines', 'Очистить линии'), clearLines, { variant: 'ghost' }),
           h('div', { class: 'dt-hint' }, ctx.pick('Units: metres (m)', 'Единицы: метры (м)')),
         ),
+        [],
+        '',
+        { defaultCollapsed: true },
       );
 
       const scenesPane = pane(
@@ -1813,8 +1701,6 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
           btn(
             ctx.pick('Save current view', 'Сохранить текущий вид'),
             () => {
-              const visibility: Record<number, boolean> = {};
-              for (const layer of layers) visibility[layer.id] = layer.visible;
               scenes.push({
                 id: nextSceneId++,
                 name: `Scene ${scenes.length + 1}`,
@@ -1822,7 +1708,6 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
                 phi,
                 radius,
                 target: [target.x, target.y, target.z],
-                layers: visibility,
               });
               renderScenes();
             },
@@ -1831,7 +1716,7 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
         ),
         [],
         '',
-        { collapsible: false },
+        { defaultCollapsed: true },
       );
 
       root.append(
@@ -1861,29 +1746,15 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
             h(
               'div',
               { class: 'dt-col' },
-              pane(ctx.pick('Layers', 'Слои'), layersHost, [
+              pane(ctx.pick('Objects', 'Объекты'), list, [
                 btn(ctx.pick('Import DXF / 3D', 'Импорт DXF / 3D'), () => modelInput.click(), {
                   variant: 'ghost',
                   title: ctx.pick('Open DXF, OBJ, STL, GLB, GLTF, FBX, DAE or 3DS', 'Открыть DXF, OBJ, STL, GLB, GLTF, FBX, DAE или 3DS'),
                 }),
               ]),
-              pane(ctx.pick('Objects', 'Объекты'), list),
-              pane(ctx.pick('Properties', 'Свойства'), inspector),
+              pane(ctx.pick('Properties', 'Свойства'), inspector, [], '', { defaultCollapsed: true }),
               scenesPane,
               displayPane,
-              pane(
-                ctx.pick('Export', 'Экспорт'),
-                h(
-                  'div',
-                  { class: 'dt-stack' },
-                  toolbar(
-                    btn(ctx.pick('Render PNG', 'Рендер PNG'), () => void exportPng(), { variant: 'primary' }),
-                    btn(ctx.pick('OBJ', 'OBJ'), exportObj, { variant: 'ghost' }),
-                    btn(ctx.pick('STL', 'STL'), exportStl, { variant: 'ghost' }),
-                    btn(ctx.pick('GLB', 'GLB'), () => void exportGlb(), { variant: 'ghost' }),
-                  ),
-                ),
-              ),
             ),
             {
               ratio: 0.74,
@@ -1894,7 +1765,18 @@ function cadEditorTool(): ReturnType<typeof defineTool> {
           ),
         ),
       );
-      root.append(textureInput, modelInput);
+      const exportActions = h(
+        'div',
+        { class: 'dt-head-actions' },
+        btn(ctx.pick('Render PNG', 'Рендер PNG'), () => void exportPng(), {
+          variant: 'primary',
+          icon: '<path d="M4 8h3l2 -2h6l2 2h3v11H4z"/><circle cx="12" cy="13.5" r="3.4"/>',
+        }),
+        btn(ctx.pick('OBJ', 'OBJ'), exportObj, { variant: 'ghost' }),
+        btn(ctx.pick('STL', 'STL'), exportStl, { variant: 'ghost' }),
+        btn(ctx.pick('GLB', 'GLB'), () => void exportGlb(), { variant: 'ghost' }),
+      );
+      root.append(exportActions, textureInput, modelInput);
 
       // ---------- boot ----------
       const initial = addPart('box', new THREE.Vector3(0, 0, 0), ctx.pick('Floor slab', 'Плита'));

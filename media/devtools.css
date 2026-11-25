@@ -741,12 +741,20 @@ body {
   border-bottom: 1px solid var(--dt-border-soft);
 }
 
-/* File pickers hoisted from the tool body into the header. */
+/* File pickers and action groups hoisted from the tool body into the header. */
 .dt-tool-actions {
   margin-left: auto;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dt-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
   min-width: 0;
 }
@@ -3143,6 +3151,8 @@ textarea.dt-input {
   align-items: center;
   gap: 4px;
   user-select: none;
+  /* The rotated cube is projected outside its layout box, so only real controls take clicks. */
+  pointer-events: none;
 }
 
 .dt-viewcube-stage {
@@ -3151,6 +3161,7 @@ textarea.dt-input {
   display: grid;
   place-items: center;
   perspective: 520px;
+  pointer-events: none;
 }
 
 .dt-viewcube-cube {
@@ -3159,6 +3170,7 @@ textarea.dt-input {
   height: 84px;
   transform-style: preserve-3d;
   transition: transform 160ms ease-out;
+  pointer-events: none;
 }
 
 .dt-viewcube-face {
@@ -3180,6 +3192,7 @@ textarea.dt-input {
   white-space: nowrap;
   overflow: hidden;
   cursor: pointer;
+  pointer-events: auto;
   backface-visibility: hidden;
   transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 }
